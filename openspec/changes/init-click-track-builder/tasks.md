@@ -15,9 +15,9 @@
 
 ## 3. Timeline Generator
 
-- [ ] 3.1 Implement base BPM/ms math logic strictly using absolute time tracking (no relative accumulation)
-- [ ] 3.2 Build AST structure-to-timeline converter
-- [ ] 3.3 Build `timeline-generator` CLI interface to consume `stdin` AST and output event array payload to `stdout`
+- [x] 3.1 Implement base BPM/ms math logic strictly using absolute time tracking (no relative accumulation)
+- [x] 3.2 Build AST structure-to-timeline converter
+- [x] 3.3 Build `timeline-generator` CLI interface to consume `stdin` AST and output event array payload to `stdout`
 
 ## 4. Audio Renderer
 
