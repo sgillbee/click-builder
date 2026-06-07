@@ -1,5 +1,5 @@
 import { parse } from "yaml";
-import { YamlConfigSchema, AstJson, TimelineCommandSchema } from "./contracts.js";
+import { YamlConfigSchema, AstJson, TimelineCommandSchema } from "../contracts.js";
 
 /**
  * Parses a fractional string like "6/8" into a number tuple [6, 8]

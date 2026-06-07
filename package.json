@@ -23,7 +23,7 @@
   },
   "type": "module",
   "scripts": {
-    "test": "vitest",
-    "test:bdd": "cucumber-js"
-  },
+    "test": "vitest run",
+    "test:bdd": "vitest run tests/bdd/pipeline.test.ts"
+  }
 }
