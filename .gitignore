@@ -54,6 +54,8 @@ env/
 # OS / Editor
 .DS_Store
 Thumbs.db
+desktop.ini
+._*
 .idea/
 .vscode/*
 !.vscode/settings.json
