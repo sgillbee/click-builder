@@ -1,5 +1,29 @@
 {
   "dependencies": {
-    "@fission-ai/openspec": "^1.4.1"
-  }
+    "@fission-ai/openspec": "^1.4.1",
+    "@types/fluent-ffmpeg": "^2.1.28",
+    "fluent-ffmpeg": "^2.1.3",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "name": "click-builder",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^13.0.0",
+    "@types/cucumber": "^6.0.1",
+    "@types/node": "^25.9.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "test:bdd": "cucumber-js"
+  },
 }
