@@ -33,5 +33,5 @@
 
 ## 6. Pipeline Orchestration
 
-- [ ] 6.1 Create master `click-builder` script that pipes all 4 tools together end-to-end
-- [ ] 6.2 Write end-to-end BDD tests asserting pipeline flow using mock inputs and final file verification
+- [x] 6.1 Create master `click-builder` script that pipes all 4 tools together end-to-end
+- [x] 6.2 Write end-to-end BDD tests asserting pipeline flow using mock inputs and final file verification
