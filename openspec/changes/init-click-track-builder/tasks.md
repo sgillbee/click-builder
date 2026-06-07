@@ -21,9 +21,9 @@
 
 ## 4. Audio Renderer
 
-- [ ] 4.1 Write integration wrapper using FFmpeg filters (`adelay`, `amix`) to construct click tracks
-- [ ] 4.2 Build `audio-renderer` CLI to parse JSON event `stdin` and output to requested/temp directory
-- [ ] 4.3 Output final path `{ "generated_audio_path": "/file.wav" }` to `stdout`
+- [x] 4.1 Write integration wrapper using FFmpeg filters (`adelay`, `amix`) to construct click tracks
+- [x] 4.2 Build `audio-renderer` CLI to parse JSON event `stdin` and output to requested/temp directory
+- [x] 4.3 Output final path `{ "generated_audio_path": "/file.wav" }` to `stdout`
 
 ## 5. Video Muxer
 
