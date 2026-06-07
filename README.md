@@ -13,6 +13,7 @@ CLI tooling for turning an existing lyric video into a click-track video workflo
 
 - Node.js 20+
 - FFmpeg installed and available on `PATH`
+- On Windows, install FFmpeg with `winget install Gyan.FFmpeg`
 - A project YAML config file
 
 ## Install
