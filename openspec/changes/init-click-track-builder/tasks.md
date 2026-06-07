@@ -8,10 +8,10 @@
 
 ## 2. Config Parser
 
-- [ ] 2.1 Implement YAML parsing of file input
-- [ ] 2.2 Validate manual `video_downbeat_offset` and mid-song meter shifts using Zod schemas
-- [ ] 2.3 Build `config-parser` CLI interface to accept file arg and output AST JSON on `stdout`
-- [ ] 2.4 Verify all logging/errors route strictly to `stderr`
+- [x] 2.1 Implement YAML parsing of file input
+- [x] 2.2 Validate manual `video_downbeat_offset` and mid-song meter shifts using Zod schemas
+- [x] 2.3 Build `config-parser` CLI interface to accept file arg and output AST JSON on `stdout`
+- [x] 2.4 Verify all logging/errors route strictly to `stderr`
 
 ## 3. Timeline Generator
 
