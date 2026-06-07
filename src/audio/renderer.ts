@@ -4,6 +4,14 @@ import * as os from "os";
 import * as fs from "fs";
 import { spawn } from "child_process";
 
+const SUPPORTED_AUDIO_FRAGMENT_EXTENSIONS = new Set([".wav", ".mp3"]);
+
+interface AudioMixOptions {
+  normalizationDb?: number;
+  limiter?: number;
+  stemRouting?: Partial<Record<"click" | "cue" | "room", "stereo" | "left" | "right" | "band-only">>;
+}
+
 function runFfmpeg(args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const proc = spawn("ffmpeg", ["-hide_banner", "-loglevel", "error", ...args]);
@@ -27,7 +35,7 @@ function runFfmpeg(args: string[]): Promise<void> {
   });
 }
 
-function resolveEventAssetPath(assetName: string, stem: "click" | "cue"): string {
+function resolveEventAssetPath(assetName: string, stem: "click" | "cue" | "room"): string {
   const repoRoot = path.resolve(process.cwd());
   const assetsRoot = path.join(repoRoot, "assets");
 
@@ -48,12 +56,42 @@ function resolveEventAssetPath(assetName: string, stem: "click" | "cue"): string
     }
   }
 
-  return stem === "click" ? fallbackClick : fallbackCue;
+  if (stem === "click") {
+    return fallbackClick;
+  }
+
+  return fallbackCue;
+}
+
+function buildStemPanFilter(route: "stereo" | "left" | "right" | "band-only"): string | null {
+  if (route === "stereo") {
+    return null;
+  }
+
+  if (route === "left") {
+    return "pan=stereo|c0=c0|c1=0*c0";
+  }
+
+  return "pan=stereo|c0=0*c0|c1=c0";
 }
 
 export async function renderAudio(timeline: TimelineJson): Promise<string> {
   const outputPath = path.join(os.tmpdir(), `click_track_${Date.now()}.wav`);
+  const args = buildRenderArgs(timeline, outputPath);
+
+  await runFfmpeg(args);
+  return outputPath;
+}
+
+export function isSupportedAudioFragmentFormat(filePath: string): boolean {
+  return SUPPORTED_AUDIO_FRAGMENT_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+}
+
+export function buildRenderArgs(timeline: TimelineJson, outputPath: string, options: AudioMixOptions = {}): string[] {
   const durationSeconds = Math.max(0.1, timeline.total_duration_ms / 1000 + 0.25);
+  const normalizationDb = options.normalizationDb ?? -3;
+  const limiter = options.limiter ?? 0.95;
+  const stemRouting = options.stemRouting ?? {};
 
   console.error(`[audio-renderer] Rendering ${timeline.events.length} events with ffmpeg...`);
   console.error(`[audio-renderer] Target path: ${outputPath}`);
@@ -77,12 +115,22 @@ export async function renderAudio(timeline: TimelineJson): Promise<string> {
 
   const filterParts: string[] = [];
   timeline.events.forEach((event, index) => {
+    const route = stemRouting[event.stem] ?? "stereo";
+    const panFilter = buildStemPanFilter(route);
+    const sourceLabel = `[${index + 1}:a]`;
+    const routedLabel = `[r${index}]`;
+    const inputLabel = panFilter ? routedLabel : sourceLabel;
     const delayMs = Math.max(0, Math.round(event.timestamp_ms));
-    filterParts.push(`[${index + 1}:a]adelay=${delayMs}|${delayMs}[e${index}]`);
+
+    if (panFilter) {
+      filterParts.push(`${sourceLabel}${panFilter}${routedLabel}`);
+    }
+
+    filterParts.push(`${inputLabel}adelay=${delayMs}|${delayMs}[e${index}]`);
   });
 
   const amixInputs = ["[0:a]", ...delayedLabels].join("");
-  filterParts.push(`${amixInputs}amix=inputs=${timeline.events.length + 1}:normalize=0,volume=-3dB,alimiter=limit=0.95[outa]`);
+  filterParts.push(`${amixInputs}amix=inputs=${timeline.events.length + 1}:normalize=0,volume=${normalizationDb}dB,alimiter=limit=${limiter}[outa]`);
 
   args.push(
     "-filter_complex",
@@ -94,6 +142,5 @@ export async function renderAudio(timeline: TimelineJson): Promise<string> {
     outputPath
   );
 
-  await runFfmpeg(args);
-  return outputPath;
+  return args;
 }

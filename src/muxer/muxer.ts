@@ -1,6 +1,9 @@
 import type { MuxerInput } from "./contracts.js";
 import { spawn } from "child_process";
 
+const SUPPORTED_VIDEO_CONTAINERS = new Set([".mp4", ".mov"]);
+const SUPPORTED_AUDIO_CODECS = new Set(["aac", "pcm_s16le"]);
+
 function runFfmpeg(args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const proc = spawn("ffmpeg", ["-hide_banner", "-loglevel", "error", ...args]);
@@ -37,8 +40,20 @@ export async function muxVideo(input: MuxerInput): Promise<string> {
   return input.output_video_path;
 }
 
+export function isSupportedVideoInputFormat(filePath: string): boolean {
+  const lower = filePath.toLowerCase();
+  return [...SUPPORTED_VIDEO_CONTAINERS].some((ext) => lower.endsWith(ext));
+}
+
+export function isSupportedOutputConfig(outputPath: string, audioCodec: string): boolean {
+  const lower = outputPath.toLowerCase();
+  const containerSupported = [...SUPPORTED_VIDEO_CONTAINERS].some((ext) => lower.endsWith(ext));
+  return containerSupported && SUPPORTED_AUDIO_CODECS.has(audioCodec.toLowerCase());
+}
+
 export function buildMuxArgs(input: MuxerInput): string[] {
   const offsetSeconds = input.video_downbeat_offset_ms / 1000.0;
+  const audioCodec = input.audio_codec ?? "aac";
   return [
     "-y",
     "-itsoffset",
@@ -54,7 +69,7 @@ export function buildMuxArgs(input: MuxerInput): string[] {
     "-c:v",
     "copy",
     "-c:a",
-    "aac",
+    audioCodec,
     "-shortest",
     input.output_video_path,
   ];

@@ -1,4 +1,4 @@
-@prd @pending
+@prd @mock
 Feature: Split-track and stem routing
   As a monitor engineer
   I want per-stem routing controls

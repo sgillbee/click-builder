@@ -5,6 +5,7 @@ export const MuxerInputSchema = z.object({
   generated_audio_path: z.string(),
   original_video_path: z.string(),
   output_video_path: z.string(),
+  audio_codec: z.string().optional(),
 });
 
 export type MuxerInput = z.infer<typeof MuxerInputSchema>;

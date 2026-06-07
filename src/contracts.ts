@@ -57,7 +57,7 @@ export type AstJson = z.infer<typeof AstJsonSchema>;
 
 export const TimelineEventSchema = z.object({
   timestamp_ms: z.number().nonnegative(), // Floating point
-  stem: z.enum(["click", "cue"]),
+  stem: z.enum(["click", "cue", "room"]),
   asset: z.string(),
 });
 

@@ -1,4 +1,4 @@
-@prd @pending
+@prd @mock
 Feature: Input and output format compatibility
   As a production user
   I want common media format support for input and output

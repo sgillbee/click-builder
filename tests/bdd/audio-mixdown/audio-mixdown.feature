@@ -1,4 +1,4 @@
-@prd @pending
+@prd @mock
 Feature: Stem mixing and output leveling
   As an engineer
   I want stem-based mixing with controlled output levels
