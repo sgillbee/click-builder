@@ -2,8 +2,51 @@ import { afterEach, describe, expect, it } from "vitest";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { spawnSync } from "child_process";
 import { muxVideo } from "./muxer.js";
 import type { MuxerInput } from "./contracts.js";
+
+function generateTestAudio(audioPath: string): void {
+  const result = spawnSync("ffmpeg", [
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-y",
+    "-f",
+    "lavfi",
+    "-i",
+    "sine=frequency=1000:duration=1",
+    "-c:a",
+    "pcm_s16le",
+    audioPath,
+  ]);
+
+  if (result.status !== 0) {
+    throw new Error(`Failed to generate test audio: ${result.stderr.toString()}`);
+  }
+}
+
+function generateTestVideo(videoPath: string): void {
+  const result = spawnSync("ffmpeg", [
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-y",
+    "-f",
+    "lavfi",
+    "-i",
+    "color=c=black:s=320x240:d=2",
+    "-c:v",
+    "libx264",
+    "-pix_fmt",
+    "yuv420p",
+    videoPath,
+  ]);
+
+  if (result.status !== 0) {
+    throw new Error(`Failed to generate test video: ${result.stderr.toString()}`);
+  }
+}
 
 describe("muxVideo", () => {
   const createdPaths: string[] = [];
@@ -22,8 +65,8 @@ describe("muxVideo", () => {
     const videoPath = path.join(workDir, "input.mp4");
     const outputPath = path.join(workDir, "output.mp4");
 
-    fs.writeFileSync(audioPath, "mock audio");
-    fs.writeFileSync(videoPath, "mock video");
+    generateTestAudio(audioPath);
+    generateTestVideo(videoPath);
 
     const input: MuxerInput = {
       video_downbeat_offset_ms: 4230.5,

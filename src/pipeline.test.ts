@@ -2,7 +2,30 @@ import { afterEach, describe, expect, it } from "vitest";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { spawnSync } from "child_process";
 import { runPipeline } from "./pipeline.js";
+
+function generateTestVideo(videoPath: string): void {
+  const result = spawnSync("ffmpeg", [
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-y",
+    "-f",
+    "lavfi",
+    "-i",
+    "color=c=black:s=320x240:d=2",
+    "-c:v",
+    "libx264",
+    "-pix_fmt",
+    "yuv420p",
+    videoPath,
+  ]);
+
+  if (result.status !== 0) {
+    throw new Error(`Failed to generate test video: ${result.stderr.toString()}`);
+  }
+}
 
 describe("runPipeline", () => {
   let workDir: string;
@@ -33,7 +56,7 @@ structure:
     measures: 2
 `
     );
-    fs.writeFileSync(inputVideoPath, "mock video data");
+    generateTestVideo(inputVideoPath);
 
     const finalPath = await runPipeline(configPath, inputVideoPath, outputVideoPath);
 

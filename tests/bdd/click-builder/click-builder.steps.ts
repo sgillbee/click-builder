@@ -3,9 +3,32 @@ import { expect } from "vitest";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { spawnSync } from "child_process";
 import { parseConfigToAst } from "../../../src/parser/parser.js";
 import { runPipeline } from "../../../src/pipeline.js";
 import type { AstJson } from "../../../src/contracts.js";
+
+function generateTestVideo(videoPath: string): void {
+  const result = spawnSync("ffmpeg", [
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-y",
+    "-f",
+    "lavfi",
+    "-i",
+    "color=c=black:s=320x240:d=2",
+    "-c:v",
+    "libx264",
+    "-pix_fmt",
+    "yuv420p",
+    videoPath,
+  ]);
+
+  if (result.status !== 0) {
+    throw new Error(`Failed to generate test video: ${result.stderr.toString()}`);
+  }
+}
 
 interface WorldState {
   workDir: string;
@@ -38,7 +61,7 @@ structure:
     time_signature: 4/4
 `;
   fs.writeFileSync(state.configPath, state.yamlContent);
-  fs.writeFileSync(state.inputVideoPath, "mock video data");
+  generateTestVideo(state.inputVideoPath as string);
 });
 
 After(() => {
