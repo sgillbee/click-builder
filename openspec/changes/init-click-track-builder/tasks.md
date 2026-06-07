@@ -27,9 +27,9 @@
 
 ## 5. Video Muxer
 
-- [ ] 5.1 Implement `-itsoffset` math utilizing `video_downbeat_offset` minus generated count-in length
-- [ ] 5.2 Configure FFmpeg execute sequence with `-v:c copy` lossless stream
-- [ ] 5.3 Build `video-muxer` CLI to ingest `stdin` and string the final executable together
+- [x] 5.1 Implement `-itsoffset` math utilizing `video_downbeat_offset` minus generated count-in length
+- [x] 5.2 Configure FFmpeg execute sequence with `-v:c copy` lossless stream
+- [x] 5.3 Build `video-muxer` CLI to ingest `stdin` and string the final executable together
 
 ## 6. Pipeline Orchestration
 
