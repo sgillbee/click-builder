@@ -32,6 +32,32 @@ Feature: Click builder pipeline
     Then the click timeline spans six measures total
     And the timeline duration is 18000 milliseconds
 
+  Scenario: Build a six-measure click track with intro and count cues on measure two
+    Given the following YAML config
+      """
+      name: "Simple Intro Click With Cues"
+      tempo: 80
+      time_signature: 4/4
+      video_downbeat_offset: 0
+      click_profile: assets/click-profiles/PraiseCharts.config.yml
+      section_markers_enabled: false
+      downbeat_emphasis_enabled: true
+      mid_beat_filler_enabled: false
+      structure:
+        - section: "Lead"
+          measures: 1
+        - section: "Count-in"
+          measures: 1
+          section_markers_enabled: true
+          section_cue_override: "Intro"
+          count_cues_enabled: true
+        - section: "Intro"
+          measures: 4
+      """
+    When the simple click timeline is generated
+    Then measure two contains intro and 2-3-4 cue overlays on top of click
+    And measures one and three through six are click-only
+
   @real
   Scenario: Render simple intro click WAV and match approved reference
     Given the simple intro click fixture config and reference wav

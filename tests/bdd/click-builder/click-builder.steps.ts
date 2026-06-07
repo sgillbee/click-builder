@@ -164,6 +164,28 @@ Then("the timeline duration is 18000 milliseconds", () => {
   expect(state.timeline?.total_duration_ms).toBe(18000);
 });
 
+Then("measure two contains intro and 2-3-4 cue overlays on top of click", () => {
+  const cues = (state.timeline?.events ?? []).filter((event) => event.stem === "cue");
+  const cueAt = (asset: string, ts: number) => cues.some((event) => event.asset === asset && Math.abs(event.timestamp_ms - ts) < 0.000001);
+
+  // 80 BPM in 4/4 => beat = 750ms, measure = 3000ms.
+  expect(cueAt("cue.section:intro", 3000)).toBe(true);
+  expect(cueAt("cue.count:2", 3750)).toBe(true);
+  expect(cueAt("cue.count:3", 4500)).toBe(true);
+  expect(cueAt("cue.count:4", 5250)).toBe(true);
+});
+
+Then("measures one and three through six are click-only", () => {
+  const cues = (state.timeline?.events ?? []).filter((event) => event.stem === "cue");
+
+  // Only measure 2 overlays are expected.
+  expect(cues).toHaveLength(4);
+  expect(cues.every((event) => event.timestamp_ms >= 3000 && event.timestamp_ms < 6000)).toBe(true);
+
+  const clickEvents = (state.timeline?.events ?? []).filter((event) => event.stem === "click");
+  expect(clickEvents).toHaveLength(24);
+});
+
 Given("the simple intro click fixture config and reference wav", () => {
   const repoRoot = process.cwd();
   state.fixtureConfigPath = path.join(repoRoot, "tests", "fixtures", "golden", "simple-intro-click.yaml");

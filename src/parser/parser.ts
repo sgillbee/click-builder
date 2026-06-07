@@ -47,6 +47,8 @@ export function parseConfigToAst(yamlContent: string): AstJson {
     const sectionMarkersEnabled = section.section_markers_enabled ?? baseSectionMarkersEnabled;
     const downbeatEmphasisEnabled = section.downbeat_emphasis_enabled ?? baseDownbeatEmphasisEnabled;
     const midBeatFillerEnabled = section.mid_beat_filler_enabled ?? baseMidBeatFillerEnabled;
+    const countCuesEnabled = section.count_cues_enabled ?? false;
+    const sectionCueOverride = section.section_cue_override;
 
     return TimelineCommandSchema.parse({
       type: "section",
@@ -58,6 +60,8 @@ export function parseConfigToAst(yamlContent: string): AstJson {
       section_markers_enabled: sectionMarkersEnabled,
       downbeat_emphasis_enabled: downbeatEmphasisEnabled,
       mid_beat_filler_enabled: midBeatFillerEnabled,
+      count_cues_enabled: countCuesEnabled,
+      section_cue_override: sectionCueOverride,
     });
   });
 

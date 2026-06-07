@@ -37,10 +37,12 @@ export function generateTimeline(ast: AstJson): TimelineJson {
       const pulseIntervalMs = measureDurationMs / pulsesPerMeasure;
       const downbeatEmphasisEnabled = cmd.downbeat_emphasis_enabled ?? true;
       const midBeatFillerEnabled = cmd.mid_beat_filler_enabled ?? false;
+      const countCuesEnabled = cmd.count_cues_enabled ?? false;
 
       if (cmd.section_markers_enabled ?? true) {
         // Cue at start of section
-        const normalizedSectionName = cmd.name.toLowerCase().replace(/[^a-z0-9]/g, "_");
+        const sectionCueName = cmd.section_cue_override ?? cmd.name;
+        const normalizedSectionName = sectionCueName.toLowerCase().replace(/[^a-z0-9]/g, "_");
         events.push({
           timestamp_ms: currentTimestampMs,
           stem: "cue",
@@ -67,6 +69,14 @@ export function generateTimeline(ast: AstJson): TimelineJson {
               timestamp_ms: absoluteBeatTimeMs + pulseIntervalMs / 2,
               stem: "click",
               asset: "click.between",
+            });
+          }
+
+          if (countCuesEnabled && b > 0 && b < 4) {
+            events.push({
+              timestamp_ms: absoluteBeatTimeMs,
+              stem: "cue",
+              asset: `cue.count:${b + 1}`,
             });
           }
         }

@@ -17,6 +17,8 @@ export const SectionConfigSchema = z.object({
   section_markers_enabled: z.boolean().optional(),
   downbeat_emphasis_enabled: z.boolean().optional(),
   mid_beat_filler_enabled: z.boolean().optional(),
+  count_cues_enabled: z.boolean().optional(),
+  section_cue_override: z.string().optional(),
 });
 
 export const YamlConfigSchema = z.object({
@@ -48,6 +50,8 @@ export const TimelineCommandSchema = z.object({
   section_markers_enabled: z.boolean().optional(),
   downbeat_emphasis_enabled: z.boolean().optional(),
   mid_beat_filler_enabled: z.boolean().optional(),
+  count_cues_enabled: z.boolean().optional(),
+  section_cue_override: z.string().optional(),
 });
 
 export const AstJsonSchema = z.object({
