@@ -2,9 +2,9 @@
 
 ## 1. Project Initialization
 
-- [ ] 1.1 Scaffold project root with multi-tool build architecture
-- [ ] 1.2 Setup Vitest and Playwright (cucumber BDD style) for integration tests
-- [ ] 1.3 Add dependencies (yaml parser, zod for json validation, fluent-ffmpeg)
+- [x] 1.1 Scaffold project root with multi-tool build architecture
+- [x] 1.2 Setup Vitest and Playwright (cucumber BDD style) for integration tests
+- [x] 1.3 Add dependencies (yaml parser, zod for json validation, fluent-ffmpeg)
 
 ## 2. Config Parser
 
