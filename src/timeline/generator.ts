@@ -35,13 +35,16 @@ export function generateTimeline(ast: AstJson): TimelineJson {
       }
 
       const pulseIntervalMs = measureDurationMs / pulsesPerMeasure;
+      const downbeatEmphasisEnabled = cmd.downbeat_emphasis_enabled ?? true;
+      const midBeatFillerEnabled = cmd.mid_beat_filler_enabled ?? false;
 
       if (cmd.section_markers_enabled ?? true) {
         // Cue at start of section
+        const normalizedSectionName = cmd.name.toLowerCase().replace(/[^a-z0-9]/g, "_");
         events.push({
           timestamp_ms: currentTimestampMs,
           stem: "cue",
-          asset: `cue_${cmd.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}.wav` // Mock asset name convention
+          asset: `cue.section:${normalizedSectionName}`
         });
       }
 
@@ -56,8 +59,16 @@ export function generateTimeline(ast: AstJson): TimelineJson {
           events.push({
             timestamp_ms: absoluteBeatTimeMs,
             stem: "click",
-            asset: b === 0 ? "click_accent.wav" : "click_normal.wav" // Accent on downbeat
+            asset: b === 0 && downbeatEmphasisEnabled ? "click.downbeat" : "click.upbeat"
           });
+
+          if (midBeatFillerEnabled) {
+            events.push({
+              timestamp_ms: absoluteBeatTimeMs + pulseIntervalMs / 2,
+              stem: "click",
+              asset: "click.between",
+            });
+          }
         }
       }
       
@@ -68,6 +79,7 @@ export function generateTimeline(ast: AstJson): TimelineJson {
 
   return {
     video_downbeat_offset_ms: ast.video_downbeat_offset_ms,
+    click_profile: ast.click_profile,
     total_duration_ms: currentTimestampMs,
     events: events,
   };

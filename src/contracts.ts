@@ -15,14 +15,19 @@ export const SectionConfigSchema = z.object({
   tempo: z.number().optional(),
   metronome_mode: MetronomeModeSchema.optional(),
   section_markers_enabled: z.boolean().optional(),
+  downbeat_emphasis_enabled: z.boolean().optional(),
+  mid_beat_filler_enabled: z.boolean().optional(),
 });
 
 export const YamlConfigSchema = z.object({
   name: z.string(),
   tempo: z.number().positive(),
   time_signature: z.string(),
+  click_profile: z.string().optional(),
   metronome_mode: MetronomeModeSchema.optional(),
   section_markers_enabled: z.boolean().optional(),
+  downbeat_emphasis_enabled: z.boolean().optional(),
+  mid_beat_filler_enabled: z.boolean().optional(),
   video_downbeat_offset: z.number().nonnegative(), // Milliseconds
   structure: z.array(SectionConfigSchema),
 });
@@ -41,11 +46,14 @@ export const TimelineCommandSchema = z.object({
   meter: MeterSchema,
   metronome_mode: MetronomeModeSchema.optional(),
   section_markers_enabled: z.boolean().optional(),
+  downbeat_emphasis_enabled: z.boolean().optional(),
+  mid_beat_filler_enabled: z.boolean().optional(),
 });
 
 export const AstJsonSchema = z.object({
   project_name: z.string(),
   video_downbeat_offset_ms: z.number().nonnegative(), // Floating point explicit in docs
+  click_profile: z.string().optional(),
   timeline_commands: z.array(TimelineCommandSchema),
 });
 
@@ -63,6 +71,7 @@ export const TimelineEventSchema = z.object({
 
 export const TimelineJsonSchema = z.object({
   video_downbeat_offset_ms: z.number().nonnegative(),
+  click_profile: z.string().optional(),
   total_duration_ms: z.number().nonnegative(),
   events: z.array(TimelineEventSchema),
 });

@@ -26,6 +26,7 @@ describe("generateTimeline", () => {
       stem: "cue",
     });
     expect(timeline.events[1].stem).toBe("click");
+    expect(timeline.events[1].asset).toBe("click.downbeat");
     expect(timeline.events[1].timestamp_ms).toBeCloseTo(0, 5);
     expect(timeline.events[2].timestamp_ms).toBeCloseTo(215.8273388, 4);
     expect(timeline.events).toHaveLength(7);

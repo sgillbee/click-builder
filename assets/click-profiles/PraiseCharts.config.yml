@@ -1,0 +1,27 @@
+name: "PraiseCharts"
+click:
+  downbeat: "PraiseCharts/PraiseCharts Downbeat.wav"
+  upbeat: "PraiseCharts/PraiseCharts Upbeat.wav"
+  between: "PraiseCharts/PraiseCharts Midbeat.wav"
+cues:
+  by_section:
+    lead: "English Guides/Song Sections/English Female - Intro.wav"
+    count_in: "English Guides/Song Sections/English Female - Intro.wav"
+    intro: "English Guides/Song Sections/English Female - Intro.wav"
+    verse: "English Guides/Song Sections/English Female - Verse.wav"
+    verse_1: "English Guides/Song Sections/English Female - Verse 1.wav"
+    verse_2: "English Guides/Song Sections/English Female - Verse 2.wav"
+    chorus: "English Guides/Song Sections/English Female - Chorus.wav"
+    chorus_1: "English Guides/Song Sections/English Female - Chorus 1.wav"
+    chorus_2: "English Guides/Song Sections/English Female - Chorus 2.wav"
+    bridge: "English Guides/Song Sections/English Female - Bridge.wav"
+    bridge_1: "English Guides/Song Sections/English Female - Bridge 1.wav"
+    bridge_2: "English Guides/Song Sections/English Female - Bridge 2.wav"
+    pre_chorus: "English Guides/Song Sections/English Female - Pre Chorus.wav"
+    interlude: "English Guides/Song Sections/English Female - Interlude.wav"
+    outro: "English Guides/Song Sections/English Female - Outro.wav"
+  by_count:
+    "1": "English Guides/Song Sections/English Female - 1.wav"
+    "2": "English Guides/Song Sections/English Female - 2.wav"
+    "3": "English Guides/Song Sections/English Female - 3.wav"
+    "4": "English Guides/Song Sections/English Female - 4.wav"

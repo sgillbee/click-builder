@@ -37,12 +37,16 @@ export function parseConfigToAst(yamlContent: string): AstJson {
   const baseTempo = config.tempo;
   const baseMetronomeMode = config.metronome_mode;
   const baseSectionMarkersEnabled = config.section_markers_enabled ?? true;
+  const baseDownbeatEmphasisEnabled = config.downbeat_emphasis_enabled ?? true;
+  const baseMidBeatFillerEnabled = config.mid_beat_filler_enabled ?? false;
 
   const commands = config.structure.map((section) => {
     const meter = section.time_signature ? parseMeter(section.time_signature) : baseMeter;
     const bpm = section.tempo ? section.tempo : baseTempo;
     const metronomeMode = section.metronome_mode ? section.metronome_mode : baseMetronomeMode;
     const sectionMarkersEnabled = section.section_markers_enabled ?? baseSectionMarkersEnabled;
+    const downbeatEmphasisEnabled = section.downbeat_emphasis_enabled ?? baseDownbeatEmphasisEnabled;
+    const midBeatFillerEnabled = section.mid_beat_filler_enabled ?? baseMidBeatFillerEnabled;
 
     return TimelineCommandSchema.parse({
       type: "section",
@@ -52,12 +56,15 @@ export function parseConfigToAst(yamlContent: string): AstJson {
       meter: meter,
       metronome_mode: metronomeMode,
       section_markers_enabled: sectionMarkersEnabled,
+      downbeat_emphasis_enabled: downbeatEmphasisEnabled,
+      mid_beat_filler_enabled: midBeatFillerEnabled,
     });
   });
 
   return {
     project_name: config.name,
     video_downbeat_offset_ms: config.video_downbeat_offset,
+    click_profile: config.click_profile,
     timeline_commands: commands,
   };
 }

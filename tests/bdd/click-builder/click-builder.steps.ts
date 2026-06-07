@@ -3,10 +3,13 @@ import { expect } from "vitest";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import * as crypto from "crypto";
 import { spawnSync } from "child_process";
 import { parseConfigToAst } from "../../../src/parser/parser.js";
+import { generateTimeline } from "../../../src/timeline/generator.js";
+import { renderAudio } from "../../../src/audio/renderer.js";
 import { runPipeline } from "../../../src/pipeline.js";
-import type { AstJson } from "../../../src/contracts.js";
+import type { AstJson, TimelineJson } from "../../../src/contracts.js";
 
 function generateTestVideo(videoPath: string): void {
   const result = spawnSync("ffmpeg", [
@@ -36,7 +39,13 @@ interface WorldState {
   inputVideoPath: string;
   outputVideoPath: string;
   yamlContent: string;
+  fixtureConfigPath?: string;
+  referenceWavPath?: string;
+  renderedWavPath?: string;
+  renderedWavHash?: string;
+  referenceWavHash?: string;
   ast?: AstJson;
+  timeline?: TimelineJson;
   finalVideoPath?: string;
 }
 
@@ -76,8 +85,18 @@ Given("a YAML config with a count-in, a base tempo, and a meter shift", () => {
   expect(state.yamlContent).toContain("time_signature: 4/4");
 });
 
+Given("the following YAML config", (docString: string) => {
+  state.yamlContent = docString;
+  fs.writeFileSync(state.configPath as string, state.yamlContent);
+});
+
 When("the config parser reads the configuration", () => {
   state.ast = parseConfigToAst(state.yamlContent as string);
+});
+
+When("the simple click timeline is generated", () => {
+  state.ast = parseConfigToAst(state.yamlContent as string);
+  state.timeline = generateTimeline(state.ast);
 });
 
 Then("the parser returns an AST with floating point downbeat offsets and section commands", () => {
@@ -134,4 +153,41 @@ Then("the pipeline produces a final muxed video file", () => {
 
 Then("each stage hands off structured data to the next stage", () => {
   expect(state.ast?.timeline_commands[0]?.bpm).toBe(72);
+});
+
+Then("the click timeline spans six measures total", () => {
+  const clickEvents = (state.timeline?.events ?? []).filter((event: TimelineJson["events"][number]) => event.stem === "click");
+  expect(clickEvents).toHaveLength(24);
+});
+
+Then("the timeline duration is 18000 milliseconds", () => {
+  expect(state.timeline?.total_duration_ms).toBe(18000);
+});
+
+Given("the simple intro click fixture config and reference wav", () => {
+  const repoRoot = process.cwd();
+  state.fixtureConfigPath = path.join(repoRoot, "tests", "fixtures", "golden", "simple-intro-click.yaml");
+  state.referenceWavPath = path.join(repoRoot, "tests", "fixtures", "golden", "simple-intro-click.wav");
+
+  expect(fs.existsSync(state.fixtureConfigPath)).toBe(true);
+  expect(fs.existsSync(state.referenceWavPath)).toBe(true);
+});
+
+When("I render the simple intro click wav from the fixture config", async () => {
+  const yamlContent = fs.readFileSync(state.fixtureConfigPath as string, "utf-8");
+  state.ast = parseConfigToAst(yamlContent);
+  state.timeline = generateTimeline(state.ast);
+  state.renderedWavPath = await renderAudio(state.timeline);
+
+  const renderedBytes = fs.readFileSync(state.renderedWavPath);
+  const referenceBytes = fs.readFileSync(state.referenceWavPath as string);
+
+  state.renderedWavHash = crypto.createHash("sha256").update(renderedBytes).digest("hex");
+  state.referenceWavHash = crypto.createHash("sha256").update(referenceBytes).digest("hex");
+});
+
+Then("the rendered wav matches the approved reference wav", () => {
+  expect(state.renderedWavHash).toBeDefined();
+  expect(state.referenceWavHash).toBeDefined();
+  expect(state.renderedWavHash).toBe(state.referenceWavHash);
 });
