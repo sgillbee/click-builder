@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { spawnSync } from "child_process";
-import { muxVideo } from "./muxer.js";
+import { buildMuxArgs, muxVideo } from "./muxer.js";
 import type { MuxerInput } from "./contracts.js";
 
 function generateTestAudio(audioPath: string): void {
@@ -80,5 +80,20 @@ describe("muxVideo", () => {
 
     expect(finalPath).toBe(outputPath);
     expect(fs.existsSync(finalPath)).toBe(true);
+  });
+
+  it("builds ffmpeg args with stream-copy and precise offset", () => {
+    const input: MuxerInput = {
+      video_downbeat_offset_ms: 4230.5,
+      generated_audio_path: "audio.wav",
+      original_video_path: "input.mp4",
+      output_video_path: "output.mp4",
+    };
+
+    const args = buildMuxArgs(input);
+    expect(args).toContain("-itsoffset");
+    expect(args[args.indexOf("-itsoffset") + 1]).toBe("4.230500");
+    expect(args[args.indexOf("-c:v") + 1]).toBe("copy");
+    expect(args[args.indexOf("-c:a") + 1]).toBe("aac");
   });
 });

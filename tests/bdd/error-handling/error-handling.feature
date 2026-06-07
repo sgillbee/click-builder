@@ -1,4 +1,4 @@
-@prd @pending
+@prd @mock
 Feature: CLI and processing error handling
   As an operator
   I want clear diagnostics for invalid inputs and processing failures

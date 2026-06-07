@@ -51,4 +51,46 @@ structure:
 
     expect(() => parseConfigToAst(yamlContent)).toThrow();
   });
+
+  it("supports global and section-level metronome mode overrides", () => {
+    const yamlContent = `
+name: "Subdivision Song"
+tempo: 120
+time_signature: 6/8
+metronome_mode: in-2
+video_downbeat_offset: 0
+structure:
+  - section: "Verse"
+    measures: 1
+  - section: "Bridge"
+    measures: 1
+    metronome_mode: in-4
+`;
+
+    const ast = parseConfigToAst(yamlContent);
+
+    expect(ast.timeline_commands[0]?.metronome_mode).toBe("in-2");
+    expect(ast.timeline_commands[1]?.metronome_mode).toBe("in-4");
+  });
+
+  it("supports global section marker disable with section-level override", () => {
+    const yamlContent = `
+name: "Marker Flags"
+tempo: 120
+time_signature: 4/4
+video_downbeat_offset: 0
+section_markers_enabled: false
+structure:
+  - section: "Intro"
+    measures: 1
+  - section: "Verse"
+    measures: 1
+    section_markers_enabled: true
+`;
+
+    const ast = parseConfigToAst(yamlContent);
+
+    expect(ast.timeline_commands[0]?.section_markers_enabled).toBe(false);
+    expect(ast.timeline_commands[1]?.section_markers_enabled).toBe(true);
+  });
 });

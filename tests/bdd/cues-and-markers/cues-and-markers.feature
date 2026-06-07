@@ -1,4 +1,4 @@
-@prd @pending
+@prd @mock
 Feature: Count-in, section cues, and optional markers
   As a band member
   I want spoken and section cues layered on top of the metronome foundation
@@ -17,5 +17,5 @@ Feature: Count-in, section cues, and optional markers
 
   Scenario: Section cues fire at section boundaries
     Given a song with Intro, Verse, Chorus, and Bridge sections
-    When the timeline is generated
+    When the cue timeline is generated
     Then a section cue is emitted at the first beat of each section

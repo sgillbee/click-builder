@@ -61,7 +61,7 @@ structure:
     time_signature: 4/4
 `;
   fs.writeFileSync(state.configPath, state.yamlContent);
-  generateTestVideo(state.inputVideoPath as string);
+  fs.writeFileSync(state.inputVideoPath, "placeholder-video-for-mock-scenarios");
 });
 
 After(() => {
@@ -96,7 +96,29 @@ Given("a valid YAML config and an input video file", () => {
   expect(fs.existsSync(state.inputVideoPath as string)).toBe(true);
 });
 
-When("I run the click builder pipeline", async () => {
+When("I run the click builder pipeline with mocked media edges", async () => {
+  const mockAudioPath = path.join(state.workDir as string, "rendered.wav");
+
+  state.ast = parseConfigToAst(fs.readFileSync(state.configPath as string, "utf-8"));
+  state.finalVideoPath = await runPipeline(
+    state.configPath as string,
+    state.inputVideoPath as string,
+    state.outputVideoPath as string,
+    {
+      async render() {
+        fs.writeFileSync(mockAudioPath, "mock-audio");
+        return mockAudioPath;
+      },
+      async mux(input) {
+        fs.writeFileSync(input.output_video_path, "mock-video-output");
+        return input.output_video_path;
+      },
+    }
+  );
+});
+
+When("I run the click builder pipeline end to end with ffmpeg", async () => {
+  generateTestVideo(state.inputVideoPath as string);
   state.ast = parseConfigToAst(fs.readFileSync(state.configPath as string, "utf-8"));
   state.finalVideoPath = await runPipeline(
     state.configPath as string,

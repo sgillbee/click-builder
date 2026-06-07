@@ -2,6 +2,7 @@ import { z } from "zod";
 
 // Shared Schemas
 export const MeterSchema = z.tuple([z.number(), z.number()]);
+export const MetronomeModeSchema = z.enum(["in-6", "in-4", "in-2"]);
 
 // ==========================================
 // 1. YAML Configuration Input Schema
@@ -12,12 +13,16 @@ export const SectionConfigSchema = z.object({
   measures: z.number().int().positive(),
   time_signature: z.string().optional(), // E.g., "4/4"
   tempo: z.number().optional(),
+  metronome_mode: MetronomeModeSchema.optional(),
+  section_markers_enabled: z.boolean().optional(),
 });
 
 export const YamlConfigSchema = z.object({
   name: z.string(),
   tempo: z.number().positive(),
   time_signature: z.string(),
+  metronome_mode: MetronomeModeSchema.optional(),
+  section_markers_enabled: z.boolean().optional(),
   video_downbeat_offset: z.number().nonnegative(), // Milliseconds
   structure: z.array(SectionConfigSchema),
 });
@@ -34,6 +39,8 @@ export const TimelineCommandSchema = z.object({
   measures: z.number().int().positive(),
   bpm: z.number().positive(),
   meter: MeterSchema,
+  metronome_mode: MetronomeModeSchema.optional(),
+  section_markers_enabled: z.boolean().optional(),
 });
 
 export const AstJsonSchema = z.object({

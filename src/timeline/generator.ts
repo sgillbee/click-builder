@@ -21,20 +21,37 @@ export function generateTimeline(ast: AstJson): TimelineJson {
       // A common convention: 60000 / BPM is length of a quarter note.
       const quarterNoteDurationMs = 60000 / cmd.bpm;
       const beatDurationMs = quarterNoteDurationMs * (4 / beatType);
+      const measureDurationMs = beatsPerMeasure * beatDurationMs;
 
-      // Cue at start of section
-      events.push({
-        timestamp_ms: currentTimestampMs,
-        stem: "cue",
-        asset: `cue_${cmd.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}.wav` // Mock asset name convention
-      });
+      let pulsesPerMeasure = beatsPerMeasure;
+      if (cmd.meter[0] === 6 && cmd.meter[1] === 8 && cmd.metronome_mode) {
+        if (cmd.metronome_mode === "in-6") {
+          pulsesPerMeasure = 6;
+        } else if (cmd.metronome_mode === "in-4") {
+          pulsesPerMeasure = 4;
+        } else {
+          pulsesPerMeasure = 2;
+        }
+      }
+
+      const pulseIntervalMs = measureDurationMs / pulsesPerMeasure;
+
+      if (cmd.section_markers_enabled ?? true) {
+        // Cue at start of section
+        events.push({
+          timestamp_ms: currentTimestampMs,
+          stem: "cue",
+          asset: `cue_${cmd.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}.wav` // Mock asset name convention
+        });
+      }
 
       for (let m = 0; m < cmd.measures; m++) {
-        for (let b = 0; b < beatsPerMeasure; b++) {
+        const measureStartMs = currentTimestampMs + m * measureDurationMs;
+        for (let b = 0; b < pulsesPerMeasure; b++) {
           // Calculate absolute time for THIS beat relative to section start to avoid compounding iteration errors
           // Then add to the absolute section start time
-          const beatOffsetMs = (m * beatsPerMeasure + b) * beatDurationMs;
-          const absoluteBeatTimeMs = currentTimestampMs + beatOffsetMs;
+          const beatOffsetMs = b * pulseIntervalMs;
+          const absoluteBeatTimeMs = measureStartMs + beatOffsetMs;
 
           events.push({
             timestamp_ms: absoluteBeatTimeMs,
@@ -45,7 +62,7 @@ export function generateTimeline(ast: AstJson): TimelineJson {
       }
       
       // Advance the global absolute section timestamp by the exact mathematical length of this section
-      currentTimestampMs += (cmd.measures * beatsPerMeasure) * beatDurationMs;
+      currentTimestampMs += cmd.measures * measureDurationMs;
     }
   }
 

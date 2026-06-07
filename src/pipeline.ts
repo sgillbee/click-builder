@@ -5,14 +5,33 @@ import { parseConfigToAst } from "./parser/parser.js";
 import { generateTimeline } from "./timeline/generator.js";
 import { renderAudio } from "./audio/renderer.js";
 import { muxVideo } from "./muxer/muxer.js";
+import type { AstJson, TimelineJson } from "./contracts.js";
+import type { MuxerInput } from "./muxer/contracts.js";
 
-export async function runPipeline(configPath: string, originalVideoPath: string, outputVideoPath: string): Promise<string> {
+export interface PipelineDependencies {
+    parse: (yamlContent: string) => AstJson;
+    timeline: (ast: AstJson) => TimelineJson;
+    render: (timeline: TimelineJson) => Promise<string>;
+    mux: (input: MuxerInput) => Promise<string>;
+}
+
+export async function runPipeline(
+    configPath: string,
+    originalVideoPath: string,
+    outputVideoPath: string,
+    deps: Partial<PipelineDependencies> = {}
+): Promise<string> {
     const yamlContent = fs.readFileSync(configPath, "utf-8");
-    const ast = parseConfigToAst(yamlContent);
-    const timeline = generateTimeline(ast);
-    const audioPath = await renderAudio(timeline);
+    const parse = deps.parse ?? parseConfigToAst;
+    const timelineBuilder = deps.timeline ?? generateTimeline;
+    const render = deps.render ?? renderAudio;
+    const mux = deps.mux ?? muxVideo;
 
-    const finalVideoPath = await muxVideo({
+    const ast = parse(yamlContent);
+    const timeline = timelineBuilder(ast);
+    const audioPath = await render(timeline);
+
+    const finalVideoPath = await mux({
         video_downbeat_offset_ms: timeline.video_downbeat_offset_ms,
         generated_audio_path: audioPath,
         original_video_path: originalVideoPath,

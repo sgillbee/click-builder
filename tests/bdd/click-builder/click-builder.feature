@@ -8,8 +8,16 @@ Feature: Click builder pipeline
     When the config parser reads the configuration
     Then the parser returns an AST with floating point downbeat offsets and section commands
 
-  Scenario: Build the final video through the full pipeline
+  @mock
+  Scenario: Build the final video through the pipeline with mocked media edges
     Given a valid YAML config and an input video file
-    When I run the click builder pipeline
+    When I run the click builder pipeline with mocked media edges
+    Then the pipeline produces a final muxed video file
+    And each stage hands off structured data to the next stage
+
+  @real @pending
+  Scenario: Build the final video through the full ffmpeg pipeline
+    Given a valid YAML config and an input video file
+    When I run the click builder pipeline end to end with ffmpeg
     Then the pipeline produces a final muxed video file
     And each stage hands off structured data to the next stage

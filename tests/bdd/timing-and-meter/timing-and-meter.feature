@@ -1,4 +1,4 @@
-@prd @pending
+@prd @mock
 Feature: Tempo, meter, and beat placement
   As a music director
   I want beat timing to remain sample-accurate across all sections

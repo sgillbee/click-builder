@@ -27,10 +27,19 @@ function runFfmpeg(args: string[]): Promise<void> {
 export async function muxVideo(input: MuxerInput): Promise<string> {
   console.error(`[video-muxer] Merging ${input.generated_audio_path} with ${input.original_video_path}`);
 
-  const offsetSeconds = input.video_downbeat_offset_ms / 1000.0;
+  const args = buildMuxArgs(input);
+  const offsetIndex = args.indexOf("-itsoffset");
+  const offsetSeconds = offsetIndex >= 0 ? args[offsetIndex + 1] : "unknown";
   console.error(`[video-muxer] Applying -itsoffset of ${offsetSeconds}s to video stream...`);
 
-  await runFfmpeg([
+  await runFfmpeg(args);
+
+  return input.output_video_path;
+}
+
+export function buildMuxArgs(input: MuxerInput): string[] {
+  const offsetSeconds = input.video_downbeat_offset_ms / 1000.0;
+  return [
     "-y",
     "-itsoffset",
     offsetSeconds.toFixed(6),
@@ -48,7 +57,5 @@ export async function muxVideo(input: MuxerInput): Promise<string> {
     "aac",
     "-shortest",
     input.output_video_path,
-  ]);
-
-  return input.output_video_path;
+  ];
 }

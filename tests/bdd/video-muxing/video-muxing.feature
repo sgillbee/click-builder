@@ -1,4 +1,4 @@
-@prd @pending
+@prd @mock
 Feature: Video muxing and sync alignment
   As an operator
   I want to preserve original video quality while syncing new click audio

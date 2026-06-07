@@ -35,10 +35,14 @@ export function parseConfigToAst(yamlContent: string): AstJson {
 
   const baseMeter = parseMeter(config.time_signature);
   const baseTempo = config.tempo;
+  const baseMetronomeMode = config.metronome_mode;
+  const baseSectionMarkersEnabled = config.section_markers_enabled ?? true;
 
   const commands = config.structure.map((section) => {
     const meter = section.time_signature ? parseMeter(section.time_signature) : baseMeter;
     const bpm = section.tempo ? section.tempo : baseTempo;
+    const metronomeMode = section.metronome_mode ? section.metronome_mode : baseMetronomeMode;
+    const sectionMarkersEnabled = section.section_markers_enabled ?? baseSectionMarkersEnabled;
 
     return TimelineCommandSchema.parse({
       type: "section",
@@ -46,6 +50,8 @@ export function parseConfigToAst(yamlContent: string): AstJson {
       measures: section.measures,
       bpm: bpm,
       meter: meter,
+      metronome_mode: metronomeMode,
+      section_markers_enabled: sectionMarkersEnabled,
     });
   });
 
