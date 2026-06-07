@@ -1,4 +1,5 @@
-import { AstJson, TimelineEventSchema, TimelineJson } from "../contracts.js";
+import { TimelineEventSchema } from "../contracts.js";
+import type { AstJson, TimelineJson } from "../contracts.js";
 import { z } from "zod";
 
 type TimelineEvent = z.infer<typeof TimelineEventSchema>;

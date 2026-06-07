@@ -25,8 +25,15 @@ npm install
 
 ```bash
 npm run test
+npm run test:coverage
 npm run test:bdd
 ```
+
+## Tests
+
+- Unit tests live next to the source they exercise as `*.test.ts` files.
+- BDD tests live under `tests/bdd/<feature>/` as `.feature` files with matching step definitions.
+- Coverage is available via `npm run test:coverage`.
 
 ## Project Structure
 

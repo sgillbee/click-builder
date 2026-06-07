@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parseConfigToAst } from "../../src/parser/parser.js";
+import { parseConfigToAst } from "./parser.js";
 
-describe("Given a YAML config, when parsed, then the AST matches the data contract", () => {
+describe("parseConfigToAst", () => {
   it("parses tempo, offsets, and mid-song meter shifts", () => {
     const yamlContent = `
 name: "Great Are You Lord"

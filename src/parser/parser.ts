@@ -1,5 +1,6 @@
 import { parse } from "yaml";
-import { YamlConfigSchema, AstJson, TimelineCommandSchema } from "../contracts.js";
+import { YamlConfigSchema, TimelineCommandSchema } from "../contracts.js";
+import type { AstJson } from "../contracts.js";
 
 /**
  * Parses a fractional string like "6/8" into a number tuple [6, 8]
@@ -9,8 +10,12 @@ function parseMeter(meterString: string): [number, number] {
   if (parts.length !== 2) {
     throw new Error(`Invalid time signature format: ${meterString}`);
   }
-  const top = parseInt(parts[0], 10);
-  const bottom = parseInt(parts[1], 10);
+  const [topRaw, bottomRaw] = parts;
+  if (!topRaw || !bottomRaw) {
+    throw new Error(`Invalid time signature format: ${meterString}`);
+  }
+  const top = parseInt(topRaw, 10);
+  const bottom = parseInt(bottomRaw, 10);
   if (isNaN(top) || isNaN(bottom)) {
     throw new Error(`Invalid time signature numbers: ${meterString}`);
   }

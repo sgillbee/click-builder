@@ -1,5 +1,5 @@
 import * as ffmpeg from "fluent-ffmpeg";
-import { MuxerInput } from "./contracts.js";
+import type { MuxerInput } from "./contracts.js";
 
 export async function muxVideo(input: MuxerInput): Promise<string> {
   return new Promise((resolve, reject) => {

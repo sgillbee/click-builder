@@ -1,5 +1,5 @@
 import * as ffmpeg from "fluent-ffmpeg";
-import { TimelineJson } from "../contracts.js";
+import type { TimelineJson } from "../contracts.js";
 import * as path from "path";
 import * as os from "os";
 

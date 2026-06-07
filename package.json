@@ -17,6 +17,7 @@
     "@cucumber/cucumber": "^13.0.0",
     "@types/cucumber": "^6.0.1",
     "@types/node": "^25.9.2",
+    "@vitest/coverage-v8": "^4.1.8",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
@@ -24,6 +25,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "test:bdd": "vitest run tests/bdd/pipeline.test.ts"
+    "test:coverage": "vitest run --coverage",
+    "test:bdd": "node --loader ts-node/esm ./node_modules/@cucumber/cucumber/bin/cucumber.js tests/bdd/click-builder/click-builder.feature --import tests/bdd/click-builder/click-builder.steps.ts"
   }
 }

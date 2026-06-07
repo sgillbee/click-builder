@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { generateTimeline } from "../../src/timeline/generator.js";
-import type { AstJson } from "../../src/contracts.js";
+import { generateTimeline } from "./generator.js";
+import type { AstJson } from "../contracts.js";
 
-describe("Given AST input, when generating a timeline, then beats stay on absolute timestamps", () => {
-  it("uses floating point beat math and overlays cues on the metronome foundation", () => {
+describe("generateTimeline", () => {
+  it("uses absolute floating-point timestamps and overlays cues on clicks", () => {
     const ast: AstJson = {
       project_name: "Great Are You Lord",
       video_downbeat_offset_ms: 4230.5,
@@ -28,6 +28,6 @@ describe("Given AST input, when generating a timeline, then beats stay on absolu
     expect(timeline.events[1].stem).toBe("click");
     expect(timeline.events[1].timestamp_ms).toBeCloseTo(0, 5);
     expect(timeline.events[2].timestamp_ms).toBeCloseTo(215.8273388, 4);
-    expect(timeline.events).toHaveLength(7); // 1 cue + 6 click events for a 6/8 measure
+    expect(timeline.events).toHaveLength(7);
   });
 });

@@ -1,4 +1,6 @@
 import * as fs from "fs";
+import { fileURLToPath } from "url";
+import * as path from "path";
 import { parseConfigToAst } from "./parser/parser.js";
 import { generateTimeline } from "./timeline/generator.js";
 import { renderAudio } from "./audio/renderer.js";
@@ -18,6 +20,14 @@ export async function runPipeline(configPath: string, originalVideoPath: string,
     });
 
     return finalVideoPath;
+}
+
+function isDirectExecution(): boolean {
+    if (!process.argv[1]) {
+        return false;
+    }
+
+    return path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 }
 
 async function main() {
@@ -42,4 +52,6 @@ async function main() {
     }
 }
 
-main();
+if (isDirectExecution()) {
+    main();
+}
