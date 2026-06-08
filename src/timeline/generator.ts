@@ -7,6 +7,9 @@ type TimelineEvent = z.infer<typeof TimelineEventSchema>;
 export function generateTimeline(ast: AstJson): TimelineJson {
   const events: TimelineEvent[] = [];
   let currentTimestampMs = 0;
+  let sectionIndex = 0;
+  let previousSectionLastMeasureDurationMs: number | undefined;
+  let previousSectionLastMeasurePulseCount: number | undefined;
 
   for (const cmd of ast.timeline_commands) {
     if (cmd.type === "section") {
@@ -35,27 +38,63 @@ export function generateTimeline(ast: AstJson): TimelineJson {
       }
 
       const pulseIntervalMs = measureDurationMs / pulsesPerMeasure;
+      const sectionDesignator = cmd.section_designator ?? "song";
       const downbeatEmphasisEnabled = cmd.downbeat_emphasis_enabled ?? true;
       const midBeatFillerEnabled = cmd.mid_beat_filler_enabled ?? false;
+      const countInEnabled = cmd.count_in_enabled ?? true;
       const countCuesEnabled = cmd.count_cues_enabled ?? false;
 
+      const sectionCueName = cmd.section_cue_override ?? cmd.name;
+      const normalizedSectionName = sectionCueName.toLowerCase().replace(/[^a-z0-9]/g, "_");
+      const isIntroSection = normalizedSectionName === "intro" || normalizedSectionName.startsWith("intro_");
+      const shouldEmitAutoIntroCountCues = sectionDesignator !== "click" && countInEnabled && isIntroSection;
+
       if (cmd.section_markers_enabled ?? true) {
-        // Cue at start of section
-        const sectionCueName = cmd.section_cue_override ?? cmd.name;
-        const normalizedSectionName = sectionCueName.toLowerCase().replace(/[^a-z0-9]/g, "_");
+        // Section cues are a one-measure heads-up before the section downbeat.
+        const cueTimestampMs = sectionIndex > 0 && previousSectionLastMeasureDurationMs !== undefined
+          ? Math.max(0, currentTimestampMs - previousSectionLastMeasureDurationMs)
+          : currentTimestampMs;
+
         events.push({
-          timestamp_ms: currentTimestampMs,
+          timestamp_ms: cueTimestampMs,
           stem: "cue",
           asset: `cue.section:${normalizedSectionName}`
         });
       }
 
+      if (shouldEmitAutoIntroCountCues && sectionIndex > 0 && previousSectionLastMeasureDurationMs !== undefined) {
+        const leadMeasureStartMs = Math.max(0, currentTimestampMs - previousSectionLastMeasureDurationMs);
+        const leadPulseCount = previousSectionLastMeasurePulseCount ?? pulsesPerMeasure;
+        const leadPulseIntervalMs = previousSectionLastMeasureDurationMs / leadPulseCount;
+
+        for (let pulseIndex = 1; pulseIndex < leadPulseCount; pulseIndex++) {
+          events.push({
+            timestamp_ms: leadMeasureStartMs + pulseIndex * leadPulseIntervalMs,
+            stem: "cue",
+            asset: `cue.count:${pulseIndex + 1}`,
+          });
+        }
+      }
+
       for (let m = 0; m < cmd.measures; m++) {
-        const measureStartMs = currentTimestampMs + m * measureDurationMs;
-        for (let b = 0; b < pulsesPerMeasure; b++) {
+        const isLastMeasure = m === cmd.measures - 1;
+        const configuredFinalBeats = cmd.final_measure_beats;
+        const usePartialLastMeasure = isLastMeasure && configuredFinalBeats !== undefined;
+        const clampedFinalBeats = Math.min(beatsPerMeasure, Math.max(1, configuredFinalBeats ?? beatsPerMeasure));
+        const effectiveBeatsThisMeasure = usePartialLastMeasure ? clampedFinalBeats : beatsPerMeasure;
+        const effectiveMeasureDurationMs = effectiveBeatsThisMeasure * beatDurationMs;
+        const effectivePulsesThisMeasure = usePartialLastMeasure
+          ? Math.max(1, Math.round((effectiveBeatsThisMeasure / beatsPerMeasure) * pulsesPerMeasure))
+          : pulsesPerMeasure;
+
+        const measureOffsetMs = m * measureDurationMs;
+        const measureStartMs = currentTimestampMs + measureOffsetMs;
+        const pulseIntervalMsThisMeasure = effectiveMeasureDurationMs / effectivePulsesThisMeasure;
+
+        for (let b = 0; b < effectivePulsesThisMeasure; b++) {
           // Calculate absolute time for THIS beat relative to section start to avoid compounding iteration errors
           // Then add to the absolute section start time
-          const beatOffsetMs = b * pulseIntervalMs;
+          const beatOffsetMs = b * pulseIntervalMsThisMeasure;
           const absoluteBeatTimeMs = measureStartMs + beatOffsetMs;
 
           events.push({
@@ -66,13 +105,14 @@ export function generateTimeline(ast: AstJson): TimelineJson {
 
           if (midBeatFillerEnabled) {
             events.push({
-              timestamp_ms: absoluteBeatTimeMs + pulseIntervalMs / 2,
+              timestamp_ms: absoluteBeatTimeMs + pulseIntervalMsThisMeasure / 2,
               stem: "click",
               asset: "click.between",
             });
           }
 
-          if (countCuesEnabled && b > 0 && b < 4) {
+          const shouldEmitCountCue = (countCuesEnabled || (shouldEmitAutoIntroCountCues && sectionIndex === 0)) && m === 0 && b > 0;
+          if (shouldEmitCountCue) {
             events.push({
               timestamp_ms: absoluteBeatTimeMs,
               stem: "cue",
@@ -83,7 +123,14 @@ export function generateTimeline(ast: AstJson): TimelineJson {
       }
       
       // Advance the global absolute section timestamp by the exact mathematical length of this section
-      currentTimestampMs += cmd.measures * measureDurationMs;
+      const finalBeats = cmd.final_measure_beats === undefined
+        ? beatsPerMeasure
+        : Math.min(beatsPerMeasure, Math.max(1, cmd.final_measure_beats));
+      previousSectionLastMeasureDurationMs = finalBeats * beatDurationMs;
+      previousSectionLastMeasurePulseCount = usePulseCountForFinalMeasure(pulsesPerMeasure, beatsPerMeasure, finalBeats);
+      const fullMeasures = Math.max(0, cmd.measures - 1);
+      currentTimestampMs += (fullMeasures * beatsPerMeasure + finalBeats) * beatDurationMs;
+      sectionIndex += 1;
     }
   }
 
@@ -93,4 +140,12 @@ export function generateTimeline(ast: AstJson): TimelineJson {
     total_duration_ms: currentTimestampMs,
     events: events,
   };
+}
+
+function usePulseCountForFinalMeasure(pulsesPerMeasure: number, beatsPerMeasure: number, finalBeats: number): number {
+  if (finalBeats === beatsPerMeasure) {
+    return pulsesPerMeasure;
+  }
+
+  return Math.max(1, Math.round((finalBeats / beatsPerMeasure) * pulsesPerMeasure));
 }

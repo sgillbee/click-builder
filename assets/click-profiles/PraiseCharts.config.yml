@@ -19,9 +19,13 @@ cues:
     bridge_2: "English Guides/Song Sections/English Female - Bridge 2.wav"
     pre_chorus: "English Guides/Song Sections/English Female - Pre Chorus.wav"
     interlude: "English Guides/Song Sections/English Female - Interlude.wav"
+    interlude_1: "English Guides/Song Sections/English Female - Interlude.wav"
+    instrumental: "English Guides/Song Sections/English Female - Instrumental.wav"
     outro: "English Guides/Song Sections/English Female - Outro.wav"
   by_count:
     "1": "English Guides/Song Sections/English Female - 1.wav"
     "2": "English Guides/Song Sections/English Female - 2.wav"
     "3": "English Guides/Song Sections/English Female - 3.wav"
     "4": "English Guides/Song Sections/English Female - 4.wav"
+    "5": "English Guides/Song Sections/English Female - 5.wav"
+    "6": "English Guides/Song Sections/English Female - 6.wav"

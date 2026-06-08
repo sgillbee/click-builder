@@ -3,16 +3,14 @@ tempo: 80
 time_signature: 4/4
 video_downbeat_offset: 0
 click_profile: assets/click-profiles/PraiseCharts.config.yml
+count_in_enabled: false
 section_markers_enabled: false
 downbeat_emphasis_enabled: true
 mid_beat_filler_enabled: true
 structure:
   - section: "Lead"
-    measures: 1
-  - section: "Count-in"
-    measures: 1
-    section_markers_enabled: true
-    section_cue_override: "Intro"
-    count_cues_enabled: true
+    measures: 2
   - section: "Intro"
     measures: 4
+    count_in_enabled: true
+    section_markers_enabled: true

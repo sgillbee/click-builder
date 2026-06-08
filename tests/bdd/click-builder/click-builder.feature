@@ -16,14 +16,13 @@ Feature: Click builder pipeline
       time_signature: 4/4
       video_downbeat_offset: 0
       click_profile: assets/click-profiles/PraiseCharts.config.yml
+      count_in_enabled: false
       section_markers_enabled: false
       downbeat_emphasis_enabled: true
       mid_beat_filler_enabled: false
       structure:
         - section: "Lead"
-          measures: 1
-        - section: "Count-in"
-          measures: 1
+          measures: 2
         - section: "Intro"
           measures: 4
       """
@@ -40,19 +39,17 @@ Feature: Click builder pipeline
       time_signature: 4/4
       video_downbeat_offset: 0
       click_profile: assets/click-profiles/PraiseCharts.config.yml
+      count_in_enabled: false
       section_markers_enabled: false
       downbeat_emphasis_enabled: true
       mid_beat_filler_enabled: false
       structure:
         - section: "Lead"
-          measures: 1
-        - section: "Count-in"
-          measures: 1
-          section_markers_enabled: true
-          section_cue_override: "Intro"
-          count_cues_enabled: true
+          measures: 2
         - section: "Intro"
           measures: 4
+          count_in_enabled: true
+          section_markers_enabled: true
       """
     When the simple click timeline is generated
     Then measure two contains intro and 2-3-4 cue overlays on top of click
@@ -61,6 +58,18 @@ Feature: Click builder pipeline
   @real
   Scenario: Render simple intro click WAV and match approved reference
     Given the simple intro click fixture config and reference wav
+    When I render the simple intro click wav from the fixture config
+    Then the rendered wav matches the approved reference wav
+
+  @real
+  Scenario: Render simple intro click with cues WAV and match approved reference
+    Given the simple intro click with cues fixture config and reference wav
+    When I render the simple intro click wav from the fixture config
+    Then the rendered wav matches the approved reference wav
+
+  @real
+  Scenario: Render simple intro click with cues midbeat WAV and match approved reference
+    Given the simple intro click with cues midbeat fixture config and reference wav
     When I render the simple intro click wav from the fixture config
     Then the rendered wav matches the approved reference wav
 

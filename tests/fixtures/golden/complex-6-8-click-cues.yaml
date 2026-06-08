@@ -1,0 +1,35 @@
+name: "Complex 6-8 Click Cues"
+tempo: 70
+time_signature: 6/8
+video_downbeat_offset: 0
+click_profile: assets/click-profiles/PraiseCharts.config.yml
+count_in_enabled: true
+section_markers_enabled: true
+downbeat_emphasis_enabled: true
+mid_beat_filler_enabled: false
+structure:
+  - section: "Click"
+    measures: 2
+  - section: "Intro"
+    measures: 2
+  - section: "Verse 1"
+    measures: 2
+  - section: "Chorus"
+    measures: 2
+  - section: "Interlude"
+    measures: 1
+  - section: "Verse 2"
+    measures: 2
+  - section: "Chorus"
+    measures: 2
+  - section: "Bridge 1"
+    measures: 2
+  - section: "Bridge 2"
+    measures: 2
+  - section: "Instrumental"
+    measures: 2
+  - section: "Chorus"
+    measures: 2
+  - section: "Outro"
+    measures: 3
+    final_measure_beats: 1

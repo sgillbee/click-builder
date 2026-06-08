@@ -178,7 +178,7 @@ Then("measure two contains intro and 2-3-4 cue overlays on top of click", () => 
 Then("measures one and three through six are click-only", () => {
   const cues = (state.timeline?.events ?? []).filter((event) => event.stem === "cue");
 
-  // Only measure 2 overlays are expected.
+  // All cue overlays should live in measure 2 only.
   expect(cues).toHaveLength(4);
   expect(cues.every((event) => event.timestamp_ms >= 3000 && event.timestamp_ms < 6000)).toBe(true);
 
@@ -190,6 +190,24 @@ Given("the simple intro click fixture config and reference wav", () => {
   const repoRoot = process.cwd();
   state.fixtureConfigPath = path.join(repoRoot, "tests", "fixtures", "golden", "simple-intro-click.yaml");
   state.referenceWavPath = path.join(repoRoot, "tests", "fixtures", "golden", "simple-intro-click.wav");
+
+  expect(fs.existsSync(state.fixtureConfigPath)).toBe(true);
+  expect(fs.existsSync(state.referenceWavPath)).toBe(true);
+});
+
+Given("the simple intro click with cues fixture config and reference wav", () => {
+  const repoRoot = process.cwd();
+  state.fixtureConfigPath = path.join(repoRoot, "tests", "fixtures", "golden", "simple-intro-click-with-cues.yaml");
+  state.referenceWavPath = path.join(repoRoot, "tests", "fixtures", "golden", "simple-intro-click-with-cues.wav");
+
+  expect(fs.existsSync(state.fixtureConfigPath)).toBe(true);
+  expect(fs.existsSync(state.referenceWavPath)).toBe(true);
+});
+
+Given("the simple intro click with cues midbeat fixture config and reference wav", () => {
+  const repoRoot = process.cwd();
+  state.fixtureConfigPath = path.join(repoRoot, "tests", "fixtures", "golden", "simple-intro-click-with-cues-midbeat.yaml");
+  state.referenceWavPath = path.join(repoRoot, "tests", "fixtures", "golden", "simple-intro-click-with-cues-midbeat.wav");
 
   expect(fs.existsSync(state.fixtureConfigPath)).toBe(true);
   expect(fs.existsSync(state.referenceWavPath)).toBe(true);

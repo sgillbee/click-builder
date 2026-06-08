@@ -49,6 +49,7 @@ Given("a song configuration with section markers disabled", () => {
 tempo: 120
 time_signature: 4/4
 video_downbeat_offset: 0
+count_in_enabled: false
 section_markers_enabled: false
 structure:
   - section: "Intro"
@@ -79,6 +80,7 @@ Given("a song with Intro, Verse, Chorus, and Bridge sections", () => {
 tempo: 120
 time_signature: 4/4
 video_downbeat_offset: 0
+count_in_enabled: false
 structure:
   - section: "Intro"
     measures: 1
@@ -96,13 +98,13 @@ When("the cue timeline is generated", () => {
   state.timeline = generateTimeline(state.ast);
 });
 
-Then("a section cue is emitted at the first beat of each section", () => {
+Then("each section cue is emitted one measure before its section downbeat", () => {
   const cueEvents = (state.timeline?.events ?? []).filter((event) => event.stem === "cue");
   const cueTimes = cueEvents.map((event) => event.timestamp_ms);
 
   expect(cueEvents).toHaveLength(4);
   expect(cueTimes[0]).toBeCloseTo(0, 8);
-  expect(cueTimes[1]).toBeCloseTo(2000, 8);
-  expect(cueTimes[2]).toBeCloseTo(4000, 8);
-  expect(cueTimes[3]).toBeCloseTo(6000, 8);
+  expect(cueTimes[1]).toBeCloseTo(0, 8);
+  expect(cueTimes[2]).toBeCloseTo(2000, 8);
+  expect(cueTimes[3]).toBeCloseTo(4000, 8);
 });

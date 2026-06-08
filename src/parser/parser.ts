@@ -22,6 +22,10 @@ function parseMeter(meterString: string): [number, number] {
   return [top, bottom];
 }
 
+  function isClickSectionName(sectionName: string): boolean {
+    return sectionName.toLowerCase().replace(/[^a-z0-9]/g, "_") === "click";
+  }
+
 export function parseConfigToAst(yamlContent: string): AstJson {
   let parsed;
   try {
@@ -35,6 +39,7 @@ export function parseConfigToAst(yamlContent: string): AstJson {
 
   const baseMeter = parseMeter(config.time_signature);
   const baseTempo = config.tempo;
+  const baseCountInEnabled = config.count_in_enabled ?? true;
   const baseMetronomeMode = config.metronome_mode;
   const baseSectionMarkersEnabled = config.section_markers_enabled ?? true;
   const baseDownbeatEmphasisEnabled = config.downbeat_emphasis_enabled ?? true;
@@ -43,19 +48,25 @@ export function parseConfigToAst(yamlContent: string): AstJson {
   const commands = config.structure.map((section) => {
     const meter = section.time_signature ? parseMeter(section.time_signature) : baseMeter;
     const bpm = section.tempo ? section.tempo : baseTempo;
+    const sectionDesignator = section.section_designator ?? (isClickSectionName(section.section) ? "click" : "song");
+    const countInEnabled = section.count_in_enabled ?? baseCountInEnabled;
     const metronomeMode = section.metronome_mode ? section.metronome_mode : baseMetronomeMode;
-    const sectionMarkersEnabled = section.section_markers_enabled ?? baseSectionMarkersEnabled;
+    const sectionMarkersEnabled = section.section_markers_enabled ?? (sectionDesignator === "click" ? false : baseSectionMarkersEnabled);
     const downbeatEmphasisEnabled = section.downbeat_emphasis_enabled ?? baseDownbeatEmphasisEnabled;
     const midBeatFillerEnabled = section.mid_beat_filler_enabled ?? baseMidBeatFillerEnabled;
     const countCuesEnabled = section.count_cues_enabled ?? false;
     const sectionCueOverride = section.section_cue_override;
+    const finalMeasureBeats = section.final_measure_beats;
 
     return TimelineCommandSchema.parse({
       type: "section",
       name: section.section,
       measures: section.measures,
+      final_measure_beats: finalMeasureBeats,
       bpm: bpm,
       meter: meter,
+      section_designator: sectionDesignator,
+      count_in_enabled: countInEnabled,
       metronome_mode: metronomeMode,
       section_markers_enabled: sectionMarkersEnabled,
       downbeat_emphasis_enabled: downbeatEmphasisEnabled,

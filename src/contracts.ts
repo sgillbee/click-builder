@@ -3,6 +3,7 @@ import { z } from "zod";
 // Shared Schemas
 export const MeterSchema = z.tuple([z.number(), z.number()]);
 export const MetronomeModeSchema = z.enum(["in-6", "in-4", "in-2"]);
+export const SectionDesignatorSchema = z.enum(["song", "click"]);
 
 // ==========================================
 // 1. YAML Configuration Input Schema
@@ -11,8 +12,11 @@ export const MetronomeModeSchema = z.enum(["in-6", "in-4", "in-2"]);
 export const SectionConfigSchema = z.object({
   section: z.string(),
   measures: z.number().int().positive(),
+  final_measure_beats: z.number().int().positive().optional(),
   time_signature: z.string().optional(), // E.g., "4/4"
   tempo: z.number().optional(),
+  section_designator: SectionDesignatorSchema.optional(),
+  count_in_enabled: z.boolean().optional(),
   metronome_mode: MetronomeModeSchema.optional(),
   section_markers_enabled: z.boolean().optional(),
   downbeat_emphasis_enabled: z.boolean().optional(),
@@ -26,6 +30,7 @@ export const YamlConfigSchema = z.object({
   tempo: z.number().positive(),
   time_signature: z.string(),
   click_profile: z.string().optional(),
+  count_in_enabled: z.boolean().optional(),
   metronome_mode: MetronomeModeSchema.optional(),
   section_markers_enabled: z.boolean().optional(),
   downbeat_emphasis_enabled: z.boolean().optional(),
@@ -44,8 +49,11 @@ export const TimelineCommandSchema = z.object({
   type: z.literal("section"),
   name: z.string(),
   measures: z.number().int().positive(),
+  final_measure_beats: z.number().int().positive().optional(),
   bpm: z.number().positive(),
   meter: MeterSchema,
+  section_designator: SectionDesignatorSchema.optional(),
+  count_in_enabled: z.boolean().optional(),
   metronome_mode: MetronomeModeSchema.optional(),
   section_markers_enabled: z.boolean().optional(),
   downbeat_emphasis_enabled: z.boolean().optional(),

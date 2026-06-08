@@ -73,6 +73,22 @@ structure:
     expect(ast.timeline_commands[1]?.metronome_mode).toBe("in-4");
   });
 
+  it("parses partial final measure beat counts", () => {
+    const yamlContent = `
+name: "Partial Measure Song"
+tempo: 100
+time_signature: 4/4
+video_downbeat_offset: 0
+structure:
+  - section: "Outro"
+    measures: 2
+    final_measure_beats: 1
+`;
+
+    const ast = parseConfigToAst(yamlContent);
+    expect(ast.timeline_commands[0]?.final_measure_beats).toBe(1);
+  });
+
   it("supports global section marker disable with section-level override", () => {
     const yamlContent = `
 name: "Marker Flags"

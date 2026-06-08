@@ -15,7 +15,7 @@ Feature: Count-in, section cues, and optional markers
     Then only metronome events are emitted
     And no section-cue stem is rendered
 
-  Scenario: Section cues fire at section boundaries
+  Scenario: Section cues lead by one measure before section boundaries
     Given a song with Intro, Verse, Chorus, and Bridge sections
     When the cue timeline is generated
-    Then a section cue is emitted at the first beat of each section
+    Then each section cue is emitted one measure before its section downbeat
