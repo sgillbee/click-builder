@@ -14,10 +14,15 @@ interface ScenarioManifestEntry {
   video_leader_ms: number;
   signed_delta_ms: number;
   beat_duration_ms: number;
+  fixture_leader_ms: number;
+  reference_audio_path?: string;
 }
 
 interface FixtureManifestEntry {
   id: string;
+  leader_ms?: number;
+  beat_duration_ms?: number;
+  measure_duration_ms?: number;
   expected_section_windows: Array<{
     name: string;
     start_ms: number;
@@ -53,7 +58,7 @@ function readScenarioFromManifest(id: string): ScenarioManifestEntry {
 
   const parsed = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf-8")) as {
     scenarios: ScenarioManifestEntry[];
-    fixtures: Array<{ id: string; beat_duration_ms: number }>;
+    fixtures: Array<{ id: string; beat_duration_ms: number; leader_ms: number }>;
   };
 
   const entry = parsed.scenarios.find((scenario) => scenario.id === id);
@@ -69,6 +74,7 @@ function readScenarioFromManifest(id: string): ScenarioManifestEntry {
   return {
     ...entry,
     beat_duration_ms: fixture.beat_duration_ms,
+    fixture_leader_ms: fixture.leader_ms,
   };
 }
 
@@ -178,18 +184,15 @@ function writeMuxArtifact(inputPath: string, scenarioId: string): void {
   const previewDir = path.join(process.cwd(), "test-artifacts", "bdd", "real", "mux-sync", "muxed-output");
   fs.mkdirSync(previewDir, { recursive: true });
 
-  // Always write a unique artifact to avoid EBUSY when a previous run is open in a media player.
-  const stamp = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
-  const uniqueOutputPath = path.join(previewDir, `${scenarioId}-${stamp}.mp4`);
-  fs.copyFileSync(inputPath, uniqueOutputPath);
+  // Keep artifact paths deterministic; if a file is locked/in-use, fail fast.
+  const outputPath = path.join(previewDir, `${scenarioId}.mp4`);
+  fs.copyFileSync(inputPath, outputPath);
+}
 
-  // Best effort: also refresh a stable "latest" path for convenience.
-  const latestOutputPath = path.join(previewDir, `${scenarioId}-latest.mp4`);
-  try {
-    fs.copyFileSync(inputPath, latestOutputPath);
-  } catch {
-    // Ignore lock errors on the convenience copy; unique artifact above is authoritative.
-  }
+function expectedFirstClickSecForScenario(scenario: ScenarioManifestEntry): number {
+  // When signed delta is positive, mux delays video by that amount.
+  // The first audible click must align with the shifted first visible pulse.
+  return (scenario.fixture_leader_ms + Math.max(0, scenario.signed_delta_ms)) / 1000;
 }
 
 Before(() => {
@@ -209,7 +212,7 @@ Given("video sync scenario fixture {string}", (scenarioId: string) => {
   const fixturePath = path.resolve(process.cwd(), scenario.fixture_path);
 
   expect(fs.existsSync(fixturePath)).toBe(true);
-  expect(fs.existsSync(BASE_AUDIO_PATH)).toBe(true);
+  expect(fs.existsSync(scenario.reference_audio_path ? path.resolve(process.cwd(), scenario.reference_audio_path) : BASE_AUDIO_PATH)).toBe(true);
   state.scenario = { ...scenario, fixture_path: fixturePath };
 });
 
@@ -221,9 +224,12 @@ When("real muxing is executed for the scenario", async () => {
   const scenario = state.scenario as ScenarioManifestEntry;
   const stagedAudioPath = path.join(state.workDir as string, `${scenario.id}-audio-led.wav`);
   const outputPath = path.join(state.workDir as string, `${scenario.id}-muxed.mp4`);
+  const sourceAudioPath = scenario.reference_audio_path
+    ? path.resolve(process.cwd(), scenario.reference_audio_path)
+    : BASE_AUDIO_PATH;
 
   // Normalize test audio to scenario-declared leader so visible and audible downbeats align by design.
-  createAudioWithLeader(BASE_AUDIO_PATH, stagedAudioPath, scenario.audio_leader_ms);
+  createAudioWithLeader(sourceAudioPath, stagedAudioPath, scenario.audio_leader_ms);
 
   await muxVideo({
     video_downbeat_offset_ms: scenario.signed_delta_ms,
@@ -261,12 +267,105 @@ Then("ffprobe stream start timings align with the signed delta expectation", () 
   const secondOnset = clickOnsets[1] as number;
   const thirdOnset = clickOnsets[2] as number;
 
-  const expectedFirstClickSec = (scenario.audio_leader_ms + Math.max(0, -scenario.signed_delta_ms)) / 1000;
+  const expectedFirstClickSec = expectedFirstClickSecForScenario(scenario);
   expect(Math.abs(firstOnset - expectedFirstClickSec)).toBeLessThanOrEqual(CLICK_ONSET_TOLERANCE_SEC);
 
   const expectedBeatGapSec = scenario.beat_duration_ms / 1000;
   expect(Math.abs((secondOnset - firstOnset) - expectedBeatGapSec)).toBeLessThanOrEqual(CLICK_ONSET_TOLERANCE_SEC);
   expect(Math.abs((thirdOnset - secondOnset) - expectedBeatGapSec)).toBeLessThanOrEqual(CLICK_ONSET_TOLERANCE_SEC);
+});
+
+Then(/^complex 6\/8 click cues preserve the longer beat grid through mux$/, () => {
+  const scenario = state.scenario as ScenarioManifestEntry;
+  const outputPath = state.outputPath as string;
+  const clickOnsets = readClickOnsetsSec(outputPath);
+
+  expect(scenario.id).toBe("complex-6-8");
+  expect(clickOnsets.length).toBeGreaterThanOrEqual(6);
+
+  // Fundamental integrity guard reused by all mux scenarios.
+  const expectedFirstClickSec = expectedFirstClickSecForScenario(scenario);
+  const firstOnset = clickOnsets[0] as number;
+  expect(Math.abs(firstOnset - expectedFirstClickSec)).toBeLessThanOrEqual(CLICK_ONSET_TOLERANCE_SEC);
+
+  const expectedBeatGapSec = scenario.beat_duration_ms / 1000;
+  for (let index = 1; index < 6; index++) {
+    const currentOnset = clickOnsets[index] as number;
+    const previousOnset = clickOnsets[index - 1] as number;
+    expect(Math.abs((currentOnset - previousOnset) - expectedBeatGapSec)).toBeLessThanOrEqual(CLICK_ONSET_TOLERANCE_SEC);
+  }
+});
+
+Then(/^complex 6\/8 click cues remain phase aligned over extended duration$/, () => {
+  const scenario = state.scenario as ScenarioManifestEntry;
+  const outputPath = state.outputPath as string;
+  const clickOnsets = readClickOnsetsSec(outputPath);
+
+  expect(scenario.id).toBe("complex-6-8");
+  expect(clickOnsets.length).toBeGreaterThanOrEqual(40);
+
+  const expectedBeatGapSec = scenario.beat_duration_ms / 1000;
+  const intervals: number[] = [];
+
+  for (let index = 1; index < clickOnsets.length; index++) {
+    const onset = clickOnsets[index] as number;
+    const previousOnset = clickOnsets[index - 1] as number;
+    intervals.push(onset - previousOnset);
+  }
+
+  expect(intervals.length).toBeGreaterThanOrEqual(30);
+
+  const sampleSize = Math.min(12, intervals.length);
+  const leadingIntervals = intervals.slice(0, sampleSize);
+  const trailingIntervals = intervals.slice(intervals.length - sampleSize);
+  const leadingAverage = leadingIntervals.reduce((sum, value) => sum + value, 0) / leadingIntervals.length;
+  const trailingAverage = trailingIntervals.reduce((sum, value) => sum + value, 0) / trailingIntervals.length;
+
+  expect(Math.abs(leadingAverage - expectedBeatGapSec)).toBeLessThanOrEqual(CLICK_ONSET_TOLERANCE_SEC);
+  expect(Math.abs(trailingAverage - expectedBeatGapSec)).toBeLessThanOrEqual(CLICK_ONSET_TOLERANCE_SEC);
+  expect(Math.abs(trailingAverage - leadingAverage)).toBeLessThanOrEqual(0.05);
+});
+
+Then(/^complex 6\/8 section label windows match long-form arrangement$/, () => {
+  const fixture = state.fixture as FixtureManifestEntry;
+  const windows = fixture.expected_section_windows;
+  const expectedNames = [
+    "Click",
+    "Intro",
+    "Verse 1",
+    "Chorus",
+    "Interlude",
+    "Verse 2",
+    "Chorus",
+    "Bridge 1",
+    "Bridge 2",
+    "Instrumental",
+    "Chorus",
+    "Outro",
+  ];
+  const expectedMeasures = [2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 3];
+
+  expect(fixture.id).toBe("sections-6-8-70");
+  expect(fixture.measure_duration_ms).toBeDefined();
+  expect(windows).toHaveLength(expectedNames.length);
+
+  const measureDurationMs = fixture.measure_duration_ms as number;
+
+  for (let index = 0; index < expectedNames.length; index++) {
+    const window = windows[index] as FixtureManifestEntry["expected_section_windows"][number];
+    const previousWindow = index > 0 ? windows[index - 1] as FixtureManifestEntry["expected_section_windows"][number] : undefined;
+    const expectedMeasureCount = expectedMeasures[index] as number;
+    const expectedDuration = expectedMeasureCount * measureDurationMs;
+
+    expect(window.name).toBe(expectedNames[index]);
+    expect(window.designator).toBe(index === 0 ? "click" : "song");
+    expect(window.visible).toBe(index !== 0);
+    expect(Math.abs((window.end_ms - window.start_ms) - expectedDuration)).toBeLessThanOrEqual(1);
+
+    if (previousWindow) {
+      expect(Math.abs(window.start_ms - previousWindow.end_ms)).toBeLessThanOrEqual(1);
+    }
+  }
 });
 
 Then("section label windows match Lead Intro Verse 1 Chorus Outro boundaries", () => {

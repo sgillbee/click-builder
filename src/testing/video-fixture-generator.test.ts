@@ -83,6 +83,35 @@ describe("video-fixture-generator helpers", () => {
 
   });
 
+  it("computes windows for the complex 6/8 section overlay fixture", () => {
+    const fixture: FixtureDefinition = {
+      id: "sections-6-8-70",
+      beat: { meter: [6, 8], bpm: 70 },
+      frameRate: 60,
+      resolution: { width: 640, height: 360 },
+      leaderBeats: 1,
+      songMeasures: 24,
+      trailingBeats: 1,
+      sections: [
+        { name: "Click", measures: 2, designator: "click" },
+        { name: "Intro", measures: 2, designator: "song" },
+        { name: "Verse 1", measures: 2, designator: "song" },
+        { name: "Chorus", measures: 2, designator: "song" },
+        { name: "Interlude", measures: 1, designator: "song" },
+      ],
+    };
+
+    const windows = __testables.sectionWindowsMs(fixture);
+
+    expect(windows).toEqual([
+      { name: "Click", start_ms: 428.571429, end_ms: 5571.428571, visible: false, designator: "click" },
+      { name: "Intro", start_ms: 5571.428571, end_ms: 10714.285714, visible: true, designator: "song" },
+      { name: "Verse 1", start_ms: 10714.285714, end_ms: 15857.142857, visible: true, designator: "song" },
+      { name: "Chorus", start_ms: 15857.142857, end_ms: 21000, visible: true, designator: "song" },
+      { name: "Interlude", start_ms: 21000, end_ms: 23571.428571, visible: true, designator: "song" },
+    ]);
+  });
+
   it("supports explicit fullscreen pulse style for compatibility", () => {
     const fixture: FixtureDefinition = {
       id: "fullscreen-compat",

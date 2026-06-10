@@ -29,6 +29,7 @@ export interface ScenarioDefinition {
   fixtureId: string;
   audioLeaderMs: number;
   videoLeaderMs: number;
+  referenceAudioPath?: string;
 }
 
 export interface FixtureGeneratorConfig {
@@ -71,6 +72,7 @@ interface ManifestScenario {
   audio_leader_ms: number;
   video_leader_ms: number;
   signed_delta_ms: number;
+  reference_audio_path?: string;
 }
 
 interface FixtureManifest {
@@ -334,7 +336,31 @@ function buildFixtureDefinitions(config: FixtureGeneratorConfig): FixtureDefinit
     ],
   };
 
-  return [...baseline, ...scenarios, sectionOverlayFixture];
+  const complexSectionOverlayFixture: FixtureDefinition = {
+    id: "sections-6-8-70",
+    beat: { meter: [6, 8], bpm: 70 },
+    frameRate: config.frameRate,
+    resolution: config.resolution,
+    leaderBeats: 1,
+    songMeasures: 24,
+    trailingBeats: DEFAULT_TRAILING_BEATS,
+    sections: [
+      { name: "Click", measures: 2, designator: "click" },
+      { name: "Intro", measures: 2, designator: "song" },
+      { name: "Verse 1", measures: 2, designator: "song" },
+      { name: "Chorus", measures: 2, designator: "song" },
+      { name: "Interlude", measures: 1, designator: "song" },
+      { name: "Verse 2", measures: 2, designator: "song" },
+      { name: "Chorus", measures: 2, designator: "song" },
+      { name: "Bridge 1", measures: 2, designator: "song" },
+      { name: "Bridge 2", measures: 2, designator: "song" },
+      { name: "Instrumental", measures: 2, designator: "song" },
+      { name: "Chorus", measures: 2, designator: "song" },
+      { name: "Outro", measures: 3, designator: "song" },
+    ],
+  };
+
+  return [...baseline, ...scenarios, sectionOverlayFixture, complexSectionOverlayFixture];
 }
 
 function buildScenarioDefinitions(fixtures: FixtureDefinition[]): ScenarioDefinition[] {
@@ -345,6 +371,13 @@ function buildScenarioDefinitions(fixtures: FixtureDefinition[]): ScenarioDefini
     { id: "d0", fixtureId: "scenario-d0-4-4-80", audioLeaderMs, videoLeaderMs: 1500 },
     { id: "dpos", fixtureId: "scenario-dpos-4-4-80", audioLeaderMs, videoLeaderMs: 750 },
     { id: "dneg", fixtureId: "scenario-dneg-4-4-80", audioLeaderMs, videoLeaderMs: 2250 },
+    {
+      id: "complex-6-8",
+      fixtureId: "sections-6-8-70",
+      audioLeaderMs: 428.571429,
+      videoLeaderMs: 428.571429,
+      referenceAudioPath: "tests/fixtures/golden/complex-6-8-click-cues.wav",
+    },
   ];
 
   for (const def of defs) {
@@ -461,6 +494,7 @@ export function generateVideoSyncFixtures(config: FixtureGeneratorConfig): Fixtu
       audio_leader_ms: scenario.audioLeaderMs,
       video_leader_ms: scenario.videoLeaderMs,
       signed_delta_ms: scenario.audioLeaderMs - scenario.videoLeaderMs,
+      ...(scenario.referenceAudioPath ? { reference_audio_path: scenario.referenceAudioPath } : {}),
     };
   });
 

@@ -19,6 +19,15 @@ Feature: Real video mux sync validation
     When real muxing is executed for the scenario
     Then ffprobe stream start timings align with the signed delta expectation
 
+  Scenario: Complex 6/8 click cues preserve the longer beat grid through mux
+    Given video sync scenario fixture "complex-6-8"
+    And section label fixture metadata "sections-6-8-70"
+    When real muxing is executed for the scenario
+    Then ffprobe stream start timings align with the signed delta expectation
+    Then complex 6/8 click cues preserve the longer beat grid through mux
+    Then complex 6/8 click cues remain phase aligned over extended duration
+    Then complex 6/8 section label windows match long-form arrangement
+
   Scenario: Section labels transition at section boundaries in fixture metadata
     Given section label fixture metadata "sections-4-4-80"
     Then section label windows match Lead Intro Verse 1 Chorus Outro boundaries
