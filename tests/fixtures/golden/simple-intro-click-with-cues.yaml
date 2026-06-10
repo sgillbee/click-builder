@@ -1,7 +1,7 @@
 name: "Simple Intro Click With Cues"
 tempo: 80
 time_signature: 4/4
-video_downbeat_offset: 0
+video_downbeat_offset_ms: 0
 click_profile: assets/click-profiles/PraiseCharts.config.yml
 count_in_enabled: false
 section_markers_enabled: false

@@ -3,7 +3,8 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { spawnSync } from "child_process";
-import { runPipeline } from "./pipeline.js";
+import { computeLeaderAwareDeltaMs, runPipeline } from "./pipeline.js";
+import type { AstJson, TimelineJson } from "./contracts.js";
 
 function generateTestVideo(videoPath: string): void {
   const result = spawnSync("ffmpeg", [
@@ -48,7 +49,7 @@ describe("runPipeline", () => {
 name: "Great Are You Lord"
 tempo: 72
 time_signature: 6/8
-video_downbeat_offset: 4230.5
+video_downbeat_offset_ms: 4230.5
 structure:
   - section: "Count-in"
     measures: 1
@@ -62,5 +63,88 @@ structure:
 
     expect(finalPath).toBe(outputVideoPath);
     expect(fs.existsSync(finalPath)).toBe(true);
+  });
+
+  it("computes leader-aware delta for D > 0", () => {
+    const ast: AstJson = {
+      project_name: "Leader Positive",
+      video_downbeat_offset_ms: 400,
+      timeline_commands: [
+        {
+          type: "section",
+          name: "Click",
+          measures: 2,
+          bpm: 80,
+          meter: [4, 4],
+          section_designator: "click",
+        },
+        {
+          type: "section",
+          name: "Intro",
+          measures: 1,
+          bpm: 80,
+          meter: [4, 4],
+        },
+      ],
+    };
+    const timeline: TimelineJson = {
+      video_downbeat_offset_ms: 400,
+      total_duration_ms: 9000,
+      events: [{ timestamp_ms: 0, stem: "click", asset: "click.downbeat" }],
+    };
+
+    const result = computeLeaderAwareDeltaMs(ast, timeline);
+    expect(result.first_click_timestamp_ms).toBeCloseTo(-6000, 6);
+    expect(result.effective_signed_delta_ms).toBeCloseTo(5600, 6);
+  });
+
+  it("computes leader-aware delta for D = 0", () => {
+    const ast: AstJson = {
+      project_name: "Leader Zero",
+      video_downbeat_offset_ms: 6000,
+      timeline_commands: [
+        {
+          type: "section",
+          name: "Click",
+          measures: 2,
+          bpm: 80,
+          meter: [4, 4],
+          section_designator: "click",
+        },
+      ],
+    };
+    const timeline: TimelineJson = {
+      video_downbeat_offset_ms: 6000,
+      total_duration_ms: 6000,
+      events: [{ timestamp_ms: 0, stem: "click", asset: "click.downbeat" }],
+    };
+
+    const result = computeLeaderAwareDeltaMs(ast, timeline);
+    expect(result.effective_signed_delta_ms).toBeCloseTo(0, 6);
+  });
+
+  it("computes leader-aware delta for D < 0", () => {
+    const ast: AstJson = {
+      project_name: "Leader Negative",
+      video_downbeat_offset_ms: 8000,
+      timeline_commands: [
+        {
+          type: "section",
+          name: "Click",
+          measures: 2,
+          bpm: 80,
+          meter: [4, 4],
+          section_designator: "click",
+        },
+      ],
+    };
+    const timeline: TimelineJson = {
+      video_downbeat_offset_ms: 8000,
+      total_duration_ms: 6000,
+      events: [{ timestamp_ms: 0, stem: "click", asset: "click.downbeat" }],
+    };
+
+    const result = computeLeaderAwareDeltaMs(ast, timeline);
+    expect(result.effective_signed_delta_ms).toBeCloseTo(-2000, 6);
   });
 });

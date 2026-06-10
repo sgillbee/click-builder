@@ -46,7 +46,7 @@ Before(() => {
 
   fs.writeFileSync(
     state.validConfigPath,
-    `name: "Valid Config"\ntempo: 120\ntime_signature: "4/4"\nvideo_downbeat_offset: 0\nstructure:\n  - section: "Intro"\n    measures: 1\n`
+    `name: "Valid Config"\ntempo: 120\ntime_signature: "4/4"\nvideo_downbeat_offset_ms: 0\nstructure:\n  - section: "Intro"\n    measures: 1\n`
   );
 
   fs.writeFileSync(state.placeholderVideoPath, "placeholder-video-content");

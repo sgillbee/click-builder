@@ -4,10 +4,12 @@
   "description": "",
   "type": "module",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "fixtures:video-sync": "node --loader ts-node/esm src/testing/video-fixture-generator.cli.ts",
-    "test:bdd": "node scripts/bdd-runner.mjs"
+    "test:bdd": "node scripts/bdd-runner.mjs",
+    "prepack": "npm run build"
   },
   "config": {
     "real": "",
@@ -15,7 +17,16 @@
     "muxsync": "",
     "tags": ""
   },
-  "main": "index.js",
+  "main": "dist/pipeline.js",
+  "types": "dist/pipeline.d.ts",
+  "bin": {
+    "click-builder": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "assets",
+    "README.md"
+  ],
   "directories": {
     "doc": "docs"
   },

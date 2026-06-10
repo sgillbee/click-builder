@@ -35,8 +35,17 @@ export const YamlConfigSchema = z.object({
   section_markers_enabled: z.boolean().optional(),
   downbeat_emphasis_enabled: z.boolean().optional(),
   mid_beat_filler_enabled: z.boolean().optional(),
-  video_downbeat_offset: z.number().nonnegative(), // Milliseconds
+  video_downbeat_offset_ms: z.number().nonnegative().optional(), // Milliseconds
+  video_downbeat_offset: z.number().nonnegative().optional(), // Legacy alias
   structure: z.array(SectionConfigSchema),
+}).superRefine((value, ctx) => {
+  if (value.video_downbeat_offset_ms === undefined && value.video_downbeat_offset === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "video_downbeat_offset_ms is required",
+      path: ["video_downbeat_offset_ms"],
+    });
+  }
 });
 
 export type YamlConfig = z.infer<typeof YamlConfigSchema>;

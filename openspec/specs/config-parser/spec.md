@@ -7,7 +7,7 @@ TBD - created by archiving change init-click-track-builder. Update Purpose after
 The parser SHALL accept a YAML file and emit a flattened, standard JSON AST (Abstract Syntax Tree) to `stdout`.
 
 #### Scenario: Basic config conversion
-- **WHEN** the `config-parser` processes a valid YAML containing `tempo: 120` and `video_downbeat_offset: 4230`
+- **WHEN** the `config-parser` processes a valid YAML containing `tempo: 120` and `video_downbeat_offset_ms: 4230`
 - **THEN** it outputs valid JSON to `stdout` containing the parsed configurations and exits with code `0`.
 
 ### Requirement: Stderr diagnostics
@@ -28,6 +28,6 @@ The parser SHALL strictly parse and maintain an array of meter changes over abso
 The parser SHALL enforce strict conformity to the CLI pipeline data contract by rejecting missing or invalid YAML structures before casting them.
 
 #### Scenario: Missing downbeat timecode
-- **WHEN** the input YAML omits the mandatory `video_downbeat_offset`
+- **WHEN** the input YAML omits the mandatory `video_downbeat_offset_ms`
 - **THEN** the parser aborts immediately with a structured `stderr` error message detailing the schema violation, without writing to `stdout`.
 

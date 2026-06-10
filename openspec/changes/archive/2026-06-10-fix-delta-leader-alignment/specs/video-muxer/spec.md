@@ -1,8 +1,5 @@
-# video-muxer Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change init-click-track-builder. Update Purpose after archive.
-## Requirements
 ### Requirement: Timecode Sync Calculation
 The muxer SHALL calculate the exact delay required to align generated click-track downbeats with the source video downbeat by using the effective signed delta derived from leader-aware timing inputs.
 
@@ -21,11 +18,3 @@ The muxer SHALL calculate the exact delay required to align generated click-trac
 #### Scenario: Zero offset applies no net delay
 - **WHEN** the mux alignment delta is zero (D = 0)
 - **THEN** the muxer emits `-itsoffset 0.000000` and stream alignment remains unchanged.
-
-### Requirement: Lossless Video Pass-through
-The muxer MUST preserve the original video body stream without re-encoding when the visible leader splice workflow has compatible source parameters.
-
-#### Scenario: Compatible splice preserves original body
-- **WHEN** source video and generated leader are concat-compatible
-- **THEN** the original program body is preserved without re-encoding during final output assembly.
-

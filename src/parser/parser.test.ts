@@ -7,7 +7,7 @@ describe("parseConfigToAst", () => {
 name: "Great Are You Lord"
 tempo: 72
 time_signature: 6/8
-video_downbeat_offset: 4230.5
+video_downbeat_offset_ms: 4230.5
 structure:
   - section: "Count-in"
     measures: 1
@@ -58,7 +58,7 @@ name: "Subdivision Song"
 tempo: 120
 time_signature: 6/8
 metronome_mode: in-2
-video_downbeat_offset: 0
+video_downbeat_offset_ms: 0
 structure:
   - section: "Verse"
     measures: 1
@@ -78,7 +78,7 @@ structure:
 name: "Partial Measure Song"
 tempo: 100
 time_signature: 4/4
-video_downbeat_offset: 0
+video_downbeat_offset_ms: 0
 structure:
   - section: "Outro"
     measures: 2
@@ -89,12 +89,27 @@ structure:
     expect(ast.timeline_commands[0]?.final_measure_beats).toBe(1);
   });
 
+  it("accepts legacy video_downbeat_offset key for backward compatibility", () => {
+    const yamlContent = `
+name: "Legacy Key Song"
+tempo: 100
+time_signature: 4/4
+video_downbeat_offset: 250
+structure:
+  - section: "Intro"
+    measures: 1
+`;
+
+    const ast = parseConfigToAst(yamlContent);
+    expect(ast.video_downbeat_offset_ms).toBe(250);
+  });
+
   it("supports global section marker disable with section-level override", () => {
     const yamlContent = `
 name: "Marker Flags"
 tempo: 120
 time_signature: 4/4
-video_downbeat_offset: 0
+video_downbeat_offset_ms: 0
 section_markers_enabled: false
 structure:
   - section: "Intro"

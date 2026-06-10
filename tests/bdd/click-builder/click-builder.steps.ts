@@ -61,7 +61,7 @@ Before(() => {
 name: "Great Are You Lord"
 tempo: 72
 time_signature: 6/8
-video_downbeat_offset: 4230.5
+video_downbeat_offset_ms: 4230.5
 structure:
   - section: "Count-in"
     measures: 1

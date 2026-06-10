@@ -26,7 +26,7 @@ function buildYaml(overrides: {
   return `name: "Timing Test Song"
 tempo: ${overrides.tempo ?? 120}
 time_signature: ${overrides.timeSignature ?? "4/4"}
-${modeLine}video_downbeat_offset: 0
+${modeLine}video_downbeat_offset_ms: 0
 structure:
 ${overrides.structure}
 `;

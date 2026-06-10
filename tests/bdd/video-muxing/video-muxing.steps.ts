@@ -1,12 +1,14 @@
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "vitest";
-import { buildMuxArgs } from "../../../src/muxer/muxer.js";
+import { buildMuxArgs, determineMuxStrategy } from "../../../src/muxer/muxer.js";
 import type { MuxerInput } from "../../../src/muxer/contracts.js";
 
 interface VideoMuxState {
   input?: MuxerInput;
   args?: string[];
   countInDurationMs?: number;
+  strategyMode?: string;
+  effectiveSignedDeltaMs?: number;
 }
 
 const state: Partial<VideoMuxState> = {};
@@ -61,10 +63,16 @@ Given("a negative video downbeat offset is provided", () => {
 });
 
 When("muxing is executed", () => {
+  const strategy = determineMuxStrategy(state.input as MuxerInput);
+  state.strategyMode = strategy.mode;
+  state.effectiveSignedDeltaMs = strategy.effectiveSignedDeltaMs;
   state.args = buildMuxArgs(state.input as MuxerInput);
 });
 
 When("output is muxed for MVP mode", () => {
+  const strategy = determineMuxStrategy(state.input as MuxerInput);
+  state.strategyMode = strategy.mode;
+  state.effectiveSignedDeltaMs = strategy.effectiveSignedDeltaMs;
   state.args = buildMuxArgs(state.input as MuxerInput);
 });
 
@@ -85,38 +93,31 @@ Then("video is not re-encoded", () => {
 });
 
 Then("the effective stream offset aligns beat one of the song with beat one in the video", () => {
-  const args = state.args as string[];
-  const offsetIndex = args.indexOf("-itsoffset");
+  expect(state.strategyMode).toBe("visible-black-leader-splice");
+  expect(state.effectiveSignedDeltaMs).toBe(5000);
 
-  expect(offsetIndex).toBeGreaterThan(-1);
-  expect(args[offsetIndex + 1]).toBe("5.000000");
-
-  // For MVP we currently treat downbeat offset as the required alignment shift.
+  // Positive-delay behavior now routes through visible leader generation.
   expect(state.countInDurationMs).toBe(5000);
   expect(state.input?.video_downbeat_offset_ms).toBe(state.countInDurationMs);
 });
 
 Then("the video stream starts after the configured delay window", () => {
-  const args = state.args as string[];
-  const offsetIndex = args.indexOf("-itsoffset");
-  const offsetSeconds = parseFloat(args[offsetIndex + 1] as string);
-
-  expect(offsetSeconds).toBeGreaterThan(0);
-  expect(args[offsetIndex + 1]).toBe("1.500000");
+  expect(state.strategyMode).toBe("visible-black-leader-splice");
+  expect(state.effectiveSignedDeltaMs).toBe(1500);
 });
 
 Then("the mux offset is exactly zero seconds", () => {
   const args = state.args as string[];
-  const offsetIndex = args.indexOf("-itsoffset");
 
-  expect(offsetIndex).toBeGreaterThan(-1);
-  expect(args[offsetIndex + 1]).toBe("0.000000");
+  expect(state.strategyMode).toBe("direct");
+  expect(args.includes("-itsoffset")).toBe(false);
 });
 
 Then("the audio stream starts after the configured delay window", () => {
   const args = state.args as string[];
   const offsetIndex = args.indexOf("-itsoffset");
 
+  expect(state.strategyMode).toBe("timestamp-delay");
   expect(offsetIndex).toBeGreaterThan(-1);
   expect(args[offsetIndex + 1]).toBe("0.250000");
 

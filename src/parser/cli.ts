@@ -8,6 +8,10 @@ async function main() {
   }
 
   const filePath = process.argv[2];
+  if (!filePath) {
+    console.error("Usage: node config-parser.js <path-to-config.yaml>");
+    process.exit(1);
+  }
 
   let fileContent: string;
   try {

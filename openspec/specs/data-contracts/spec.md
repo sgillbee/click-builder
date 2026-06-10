@@ -8,7 +8,7 @@ The system SHALL support and validate a standardized YAML configuration defining
 
 #### Scenario: Valid baseline config
 - **WHEN** verifying the initial input
-- **THEN** it must conform to the structure supporting `tempo`, `time_signature`, `video_downbeat_offset` (in milliseconds), and a `structure` array denoting sections, measures, and optional meter/tempo overrides.
+- **THEN** it must conform to the structure supporting `tempo`, `time_signature`, `video_downbeat_offset_ms` (in milliseconds), and a `structure` array denoting sections, measures, and optional meter/tempo overrides.
 
 ### Requirement: AST JSON Pipeline Contract
 The parser output and timeline-generator input SHALL strictly conform to a defined AST JSON schema to avoid pipeline mismatches. All time-based properties MUST use floating-point numbers to maintain strict sub-millisecond audio sample precision.

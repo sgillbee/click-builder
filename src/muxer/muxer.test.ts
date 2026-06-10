@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { spawnSync } from "child_process";
-import { buildMuxArgs, muxVideo } from "./muxer.js";
+import { buildMuxArgs, determineMuxStrategy, muxVideo } from "./muxer.js";
 import type { MuxerInput } from "./contracts.js";
 
 function generateTestAudio(audioPath: string): void {
@@ -82,7 +82,7 @@ describe("muxVideo", () => {
     expect(fs.existsSync(finalPath)).toBe(true);
   });
 
-  it("builds ffmpeg args with stream-copy and precise offset", () => {
+  it("selects visible black leader splice strategy for positive delta", () => {
     const input: MuxerInput = {
       video_downbeat_offset_ms: 4230.5,
       generated_audio_path: "audio.wav",
@@ -90,12 +90,9 @@ describe("muxVideo", () => {
       output_video_path: "output.mp4",
     };
 
-    const args = buildMuxArgs(input);
-    expect(args).toContain("-itsoffset");
-    expect(args[args.indexOf("-itsoffset") + 1]).toBe("4.230500");
-    expect(args.indexOf("-itsoffset")).toBeLessThan(args.indexOf("input.mp4"));
-    expect(args[args.indexOf("-c:v") + 1]).toBe("copy");
-    expect(args[args.indexOf("-c:a") + 1]).toBe("aac");
+    const strategy = determineMuxStrategy(input);
+    expect(strategy.mode).toBe("visible-black-leader-splice");
+    expect(strategy.effectiveSignedDeltaMs).toBe(4230.5);
   });
 
   it("builds ffmpeg args that delay audio when offset is negative", () => {
@@ -113,6 +110,35 @@ describe("muxVideo", () => {
     // For negative offsets, video is first input and offset is applied to audio input.
     expect(args.indexOf("input.mp4")).toBeLessThan(args.indexOf("-itsoffset"));
     expect(args.indexOf("-itsoffset")).toBeLessThan(args.indexOf("audio.wav"));
+    expect(args[args.indexOf("-c:v") + 1]).toBe("copy");
+    expect(args[args.indexOf("-c:a") + 1]).toBe("aac");
+  });
+
+  it("prefers effective signed delta when provided", () => {
+    const input: MuxerInput = {
+      video_downbeat_offset_ms: 400,
+      first_click_timestamp_ms: -6000,
+      effective_signed_delta_ms: 5600,
+      generated_audio_path: "audio.wav",
+      original_video_path: "input.mp4",
+      output_video_path: "output.mp4",
+    };
+
+    const strategy = determineMuxStrategy(input);
+    expect(strategy.mode).toBe("visible-black-leader-splice");
+    expect(strategy.effectiveSignedDeltaMs).toBe(5600);
+  });
+
+  it("builds direct mux args for zero delta", () => {
+    const input: MuxerInput = {
+      video_downbeat_offset_ms: 0,
+      generated_audio_path: "audio.wav",
+      original_video_path: "input.mp4",
+      output_video_path: "output.mp4",
+    };
+
+    const args = buildMuxArgs(input);
+    expect(args.includes("-itsoffset")).toBe(false);
     expect(args[args.indexOf("-c:v") + 1]).toBe("copy");
     expect(args[args.indexOf("-c:a") + 1]).toBe("aac");
   });

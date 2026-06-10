@@ -78,7 +78,7 @@ export function parseConfigToAst(yamlContent: string): AstJson {
 
   return {
     project_name: config.name,
-    video_downbeat_offset_ms: config.video_downbeat_offset,
+    video_downbeat_offset_ms: config.video_downbeat_offset_ms ?? config.video_downbeat_offset ?? 0,
     click_profile: config.click_profile,
     timeline_commands: commands,
   };

@@ -4,11 +4,15 @@
 TBD - created by archiving change init-click-track-builder. Update Purpose after archive.
 ## Requirements
 ### Requirement: Mathematical Track Sequencing
-The generator SHALL consume the AST JSON via `stdin` and output an array of absolute timestamps for each audio cue.
+The generator SHALL consume AST JSON and produce absolute event timestamps that can be used to derive click leader timing for mux alignment.
 
 #### Scenario: No relative rounding drift
-- **WHEN** calculating the 100th measure beat of a 139 BPM configuration
-- **THEN** the output JSON contains an event where the time is correctly calculated from zero using absolute multiplication `(beat_index * 60000 / BPM)`, not relative summation.
+- **WHEN** calculating late-song beat timestamps for high-measure arrangements
+- **THEN** output event times are computed from absolute math and remain stable without cumulative drift.
+
+#### Scenario: First click timestamp is derivable from output events
+- **WHEN** a generated timeline contains click events
+- **THEN** the first click event timestamp can be deterministically read as the click leader timing input used by mux alignment.
 
 ### Requirement: Pipeline validation
 The generator SHALL gracefully fail if passed a malformed AST schema from the parser.

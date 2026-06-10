@@ -19,6 +19,11 @@ Feature: Real video mux sync validation
     When real muxing is executed for the scenario
     Then ffprobe stream start timings align with the signed delta expectation
 
+  Scenario: Leader-aware click intro yields D > 0 and delays video
+    Given leader-aware real mux config with a click intro and 400ms video downbeat offset
+    When leader-aware real pipeline muxing is executed
+    Then ffprobe stream start timings align with leader-aware effective delta
+
   Scenario: Complex 6/8 click cues preserve the longer beat grid through mux
     Given video sync scenario fixture "complex-6-8"
     And section label fixture metadata "sections-6-8-70"

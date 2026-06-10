@@ -5,6 +5,7 @@ import * as os from "os";
 import * as path from "path";
 import { spawnSync } from "child_process";
 import { muxVideo } from "../../../src/muxer/muxer.js";
+import { runPipeline } from "../../../src/pipeline.js";
 
 interface ScenarioManifestEntry {
   id: string;
@@ -43,6 +44,10 @@ interface RealMuxState {
   fixture?: FixtureManifestEntry;
   outputPath?: string;
   starts?: StreamStartInfo;
+  leaderAwareConfigPath?: string;
+  leaderAwareSourceVideoPath?: string;
+  expectedLeaderAwareDeltaMs?: number;
+  expectedLeaderAwarePulseStartMs?: number;
 }
 
 const state: Partial<RealMuxState> = {};
@@ -50,6 +55,7 @@ const MANIFEST_PATH = path.join(process.cwd(), "tests", "fixtures", "video-sync"
 const BASE_AUDIO_PATH = path.join(process.cwd(), "tests", "fixtures", "golden", "simple-intro-click.wav");
 const START_TOLERANCE_SEC = 0.06;
 const CLICK_ONSET_TOLERANCE_SEC = 0.10;
+const PULSE_START_TOLERANCE_SEC = 0.12;
 
 function readScenarioFromManifest(id: string): ScenarioManifestEntry {
   if (!fs.existsSync(MANIFEST_PATH)) {
@@ -156,6 +162,28 @@ function readClickOnsetsSec(filePath: string): number[] {
   return onsets;
 }
 
+function readFirstVisiblePulseSec(filePath: string): number {
+  const result = spawnSync(
+    "ffmpeg",
+    [
+      "-hide_banner",
+      "-i",
+      filePath,
+      "-vf",
+      "crop=64:64:iw-80:16,blackdetect=d=0.05:pix_th=0.02",
+      "-an",
+      "-f",
+      "null",
+      "NUL",
+    ],
+    { encoding: "utf-8" },
+  );
+
+  const output = `${result.stdout}\n${result.stderr}`;
+  const match = /black_start:0\s+black_end:([0-9]+(?:\.[0-9]+)?)/.exec(output);
+  return match ? Number(match[1]) : 0;
+}
+
 function createAudioWithLeader(baseAudioPath: string, outputPath: string, leaderMs: number): void {
   const result = spawnSync(
     "ffmpeg",
@@ -250,7 +278,11 @@ Then("ffprobe stream start timings align with the signed delta expectation", () 
 
   if (scenario.signed_delta_ms > 0) {
     expect(starts.audioStartSec).toBeLessThanOrEqual(START_TOLERANCE_SEC);
-    expect(Math.abs(starts.videoStartSec - deltaSec)).toBeLessThanOrEqual(START_TOLERANCE_SEC);
+    expect(starts.videoStartSec).toBeLessThanOrEqual(START_TOLERANCE_SEC);
+
+    const firstVisiblePulseSec = readFirstVisiblePulseSec(state.outputPath as string);
+    const expectedVisiblePulseSec = expectedFirstClickSecForScenario(scenario);
+    expect(Math.abs(firstVisiblePulseSec - expectedVisiblePulseSec)).toBeLessThanOrEqual(PULSE_START_TOLERANCE_SEC);
   } else if (scenario.signed_delta_ms < 0) {
     expect(starts.videoStartSec).toBeLessThanOrEqual(START_TOLERANCE_SEC);
     expect(Math.abs(starts.audioStartSec - deltaSec)).toBeLessThanOrEqual(START_TOLERANCE_SEC);
@@ -273,6 +305,63 @@ Then("ffprobe stream start timings align with the signed delta expectation", () 
   const expectedBeatGapSec = scenario.beat_duration_ms / 1000;
   expect(Math.abs((secondOnset - firstOnset) - expectedBeatGapSec)).toBeLessThanOrEqual(CLICK_ONSET_TOLERANCE_SEC);
   expect(Math.abs((thirdOnset - secondOnset) - expectedBeatGapSec)).toBeLessThanOrEqual(CLICK_ONSET_TOLERANCE_SEC);
+});
+
+Given("leader-aware real mux config with a click intro and 400ms video downbeat offset", () => {
+  const fixtureVideoPath = path.join(process.cwd(), "tests", "fixtures", "video-sync", "scenario-d0-4-4-80.mp4");
+  const configPath = path.join(state.workDir as string, "leader-aware-dpos.yaml");
+
+  const config = `name: "Leader Aware DPos"
+tempo: 80
+time_signature: 4/4
+video_downbeat_offset_ms: 400
+click_profile: assets/click-profiles/PraiseCharts.config.yml
+count_in_enabled: true
+section_markers_enabled: false
+downbeat_emphasis_enabled: true
+mid_beat_filler_enabled: false
+structure:
+  - section: "Click"
+    measures: 2
+  - section: "Intro"
+    measures: 2
+`;
+
+  fs.writeFileSync(configPath, config);
+
+  // 2 measures at 80 BPM in 4/4 => 6000ms click leader; D = 6000 - 400 = +5600ms.
+  state.expectedLeaderAwareDeltaMs = 5600;
+  state.expectedLeaderAwarePulseStartMs = 7100;
+  state.leaderAwareConfigPath = configPath;
+  state.leaderAwareSourceVideoPath = fixtureVideoPath;
+
+  expect(fs.existsSync(configPath)).toBe(true);
+  expect(fs.existsSync(fixtureVideoPath)).toBe(true);
+});
+
+When("leader-aware real pipeline muxing is executed", async () => {
+  const outputPath = path.join(state.workDir as string, "leader-aware-dpos-muxed.mp4");
+
+  await runPipeline(
+    state.leaderAwareConfigPath as string,
+    state.leaderAwareSourceVideoPath as string,
+    outputPath,
+  );
+
+  state.outputPath = outputPath;
+  state.starts = readStreamStarts(outputPath);
+  writeMuxArtifact(outputPath, "leader-aware-dpos");
+});
+
+Then("ffprobe stream start timings align with leader-aware effective delta", () => {
+  const starts = state.starts as StreamStartInfo;
+  const expectedPulseStartSec = (state.expectedLeaderAwarePulseStartMs as number) / 1000;
+
+  expect(starts.audioStartSec).toBeLessThanOrEqual(START_TOLERANCE_SEC);
+  expect(starts.videoStartSec).toBeLessThanOrEqual(START_TOLERANCE_SEC);
+
+  const firstVisiblePulseSec = readFirstVisiblePulseSec(state.outputPath as string);
+  expect(Math.abs(firstVisiblePulseSec - expectedPulseStartSec)).toBeLessThanOrEqual(PULSE_START_TOLERANCE_SEC);
 });
 
 Then(/^complex 6\/8 click cues preserve the longer beat grid through mux$/, () => {

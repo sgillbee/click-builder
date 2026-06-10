@@ -16,7 +16,7 @@ Given("a configuration with a one-measure metronome pre-roll and a one-measure s
   state.yamlContent = `name: "Cue Overlay Song"
 tempo: 120
 time_signature: 4/4
-video_downbeat_offset: 0
+video_downbeat_offset_ms: 0
 structure:
   - section: "Pre-roll"
     measures: 1
@@ -48,7 +48,7 @@ Given("a song configuration with section markers disabled", () => {
   state.yamlContent = `name: "No Marker Song"
 tempo: 120
 time_signature: 4/4
-video_downbeat_offset: 0
+video_downbeat_offset_ms: 0
 count_in_enabled: false
 section_markers_enabled: false
 structure:
@@ -79,7 +79,7 @@ Given("a song with Intro, Verse, Chorus, and Bridge sections", () => {
   state.yamlContent = `name: "Section Cues"
 tempo: 120
 time_signature: 4/4
-video_downbeat_offset: 0
+video_downbeat_offset_ms: 0
 count_in_enabled: false
 structure:
   - section: "Intro"

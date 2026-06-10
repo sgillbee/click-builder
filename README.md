@@ -22,6 +22,20 @@ CLI tooling for turning an existing lyric video into a click-track video workflo
 npm install
 ```
 
+## Global CLI Install
+
+Install globally from this repository so the `click-builder` command is available on your `PATH`:
+
+```bash
+npm install -g .
+```
+
+Then run:
+
+```bash
+click-builder <config.yaml> <input-video> <output-video>
+```
+
 ## Scripts
 
 ```bash
@@ -92,7 +106,7 @@ Example:
 name: "Great Are You Lord"
 tempo: 72
 time_signature: 6/8
-video_downbeat_offset: 4230
+video_downbeat_offset_ms: 4230
 structure:
   - section: "Count-in"
     measures: 1

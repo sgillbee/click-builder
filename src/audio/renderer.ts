@@ -3,9 +3,11 @@ import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
 import { spawn } from "child_process";
+import { fileURLToPath } from "url";
 import { parse as parseYaml } from "yaml";
 
 const SUPPORTED_AUDIO_FRAGMENT_EXTENSIONS = new Set([".wav", ".mp3"]);
+const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 interface AudioMixOptions {
   normalizationDb?: number;
@@ -52,11 +54,19 @@ function runFfmpeg(args: string[]): Promise<void> {
   });
 }
 
-function loadClickProfile(repoRoot: string, profilePath?: string): LoadedClickProfile {
+function loadClickProfile(profilePath?: string): LoadedClickProfile {
   const profileRelativePath = profilePath ?? DEFAULT_CLICK_PROFILE_PATH;
-  const resolvedProfilePath = path.isAbsolute(profileRelativePath)
-    ? profileRelativePath
-    : path.join(repoRoot, profileRelativePath);
+  const profileCandidates = path.isAbsolute(profileRelativePath)
+    ? [profileRelativePath]
+    : [path.join(process.cwd(), profileRelativePath), path.join(PACKAGE_ROOT, profileRelativePath)];
+
+  const resolvedProfilePath = profileCandidates.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
+
+  if (!resolvedProfilePath) {
+    throw new Error(
+      `[audio-renderer] Failed to load click profile. Tried: ${profileCandidates.join(", ")}`
+    );
+  }
 
   try {
     const fileContent = fs.readFileSync(resolvedProfilePath, "utf-8");
@@ -94,49 +104,79 @@ function resolveProfileAsset(assetName: string, profile: ClickProfile, profilePa
   if (assetName.startsWith("cue.section:")) {
     const sectionName = assetName.split(":", 2)[1] ?? "";
     const sectionOverride = profile.cues?.by_section?.[sectionName];
-    if (!sectionOverride) {
-      throw new Error(
-        `[audio-renderer] Missing mapping for cue.section:${sectionName} in click profile ${profilePath}. Add cues.by_section.${sectionName}`
-      );
+    if (sectionOverride) {
+      return sectionOverride;
     }
-    return sectionOverride;
+
+    // Fall back to generic families for common song section variants.
+    if (sectionName.includes("chorus") && profile.cues?.by_section?.chorus) {
+      return profile.cues.by_section.chorus;
+    }
+    if (sectionName.includes("verse") && profile.cues?.by_section?.verse) {
+      return profile.cues.by_section.verse;
+    }
+    if (sectionName.includes("bridge") && profile.cues?.by_section?.bridge) {
+      return profile.cues.by_section.bridge;
+    }
+    if (sectionName.includes("intro") && profile.cues?.by_section?.intro) {
+      return profile.cues.by_section.intro;
+    }
+    if (sectionName.includes("outro") && profile.cues?.by_section?.outro) {
+      return profile.cues.by_section.outro;
+    }
+    if (sectionName.includes("tag") && profile.cues?.by_section?.outro) {
+      return profile.cues.by_section.outro;
+    }
+
+    const sectionDefault = profile.cues?.section_default;
+    if (sectionDefault) {
+      return sectionDefault;
+    }
+
+    throw new Error(
+      `[audio-renderer] Missing mapping for cue.section:${sectionName} in click profile ${profilePath}. Add cues.by_section.${sectionName} or cues.section_default`
+    );
   }
 
   if (assetName.startsWith("cue.count:")) {
     const countIndex = assetName.split(":", 2)[1] ?? "";
     const countOverride = profile.cues?.by_count?.[countIndex];
-    if (!countOverride) {
-      throw new Error(
-        `[audio-renderer] Missing mapping for cue.count:${countIndex} in click profile ${profilePath}. Add cues.by_count."${countIndex}"`
-      );
+    if (countOverride) {
+      return countOverride;
     }
-    return countOverride;
+
+    const countDefault = profile.cues?.count_default;
+    if (countDefault) {
+      return countDefault;
+    }
+
+    throw new Error(
+      `[audio-renderer] Missing mapping for cue.count:${countIndex} in click profile ${profilePath}. Add cues.by_count."${countIndex}" or cues.count_default`
+    );
   }
 
   return null;
 }
 
 function resolveEventAssetPath(assetName: string, stem: "click" | "cue" | "room", profilePath?: string): string {
-  const repoRoot = path.resolve(process.cwd());
-  const assetsRoot = path.join(repoRoot, "assets");
-  const loadedProfile = loadClickProfile(repoRoot, profilePath);
+  const assetsRoots = [path.join(process.cwd(), "assets"), path.join(PACKAGE_ROOT, "assets")];
+  const loadedProfile = loadClickProfile(profilePath);
   const profile = loadedProfile.profile;
   const resolvedProfilePath = loadedProfile.profilePath;
 
-  const fallbackClick = path.join(assetsRoot, "PraiseCharts", "PraiseCharts Downbeat.wav");
-  const fallbackCue = path.join(assetsRoot, "Metronome", "MetronomeUp.wav");
+  const fallbackClick = assetsRoots.map((root) => path.join(root, "PraiseCharts", "PraiseCharts Downbeat.wav"));
+  const fallbackCue = assetsRoots.map((root) => path.join(root, "Metronome", "MetronomeUp.wav"));
 
   const profileMappedAsset = resolveProfileAsset(assetName, profile, resolvedProfilePath);
   const resolvedAssetName = profileMappedAsset ?? assetName;
 
-  const candidates = [
-    resolvedAssetName,
+  const candidates = [resolvedAssetName, ...assetsRoots.flatMap((assetsRoot) => [
     path.join(assetsRoot, resolvedAssetName),
     path.join(assetsRoot, "PraiseCharts", resolvedAssetName),
     path.join(assetsRoot, "Metronome", resolvedAssetName),
     path.join(assetsRoot, "English Guides", "Song Sections", resolvedAssetName),
     path.join(assetsRoot, "English Guides", "Dynamic Cues", resolvedAssetName),
-  ];
+  ])];
 
   for (const candidate of candidates) {
     if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
@@ -151,10 +191,18 @@ function resolveEventAssetPath(assetName: string, stem: "click" | "cue" | "room"
   }
 
   if (stem === "click") {
-    return fallbackClick;
+    const clickFallback = fallbackClick.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
+    if (clickFallback) {
+      return clickFallback;
+    }
+    throw new Error("[audio-renderer] No fallback click asset found in project or installed package assets.");
   }
 
-  return fallbackCue;
+  const cueFallback = fallbackCue.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
+  if (cueFallback) {
+    return cueFallback;
+  }
+  throw new Error("[audio-renderer] No fallback cue asset found in project or installed package assets.");
 }
 
 function buildStemPanFilter(route: "stereo" | "left" | "right" | "band-only"): string | null {
@@ -200,18 +248,63 @@ export function buildRenderArgs(timeline: TimelineJson, outputPath: string, opti
     "anullsrc=channel_layout=stereo:sample_rate=48000",
   ];
 
-  const delayedLabels: string[] = [];
-  timeline.events.forEach((event, index) => {
-    const resolvedAsset = resolveEventAssetPath(event.asset, event.stem, timeline.click_profile);
+  const resolvedEventAssets = timeline.events.map((event) =>
+    resolveEventAssetPath(event.asset, event.stem, timeline.click_profile)
+  );
+
+  const assetToInputIndex = new Map<string, number>();
+  for (const resolvedAsset of resolvedEventAssets) {
+    if (assetToInputIndex.has(resolvedAsset)) {
+      continue;
+    }
     args.push("-i", resolvedAsset);
-    delayedLabels.push(`[e${index}]`);
+    assetToInputIndex.set(resolvedAsset, assetToInputIndex.size + 1);
+  }
+
+  const assetEventSlots = new Map<string, number[]>();
+  resolvedEventAssets.forEach((resolvedAsset, eventIndex) => {
+    const slots = assetEventSlots.get(resolvedAsset);
+    if (slots) {
+      slots.push(eventIndex);
+      return;
+    }
+    assetEventSlots.set(resolvedAsset, [eventIndex]);
   });
 
+  const delayedLabels: string[] = [];
+  timeline.events.forEach((_, index) => delayedLabels.push(`[e${index}]`));
+
   const filterParts: string[] = [];
+  const eventSourceLabels = new Array<string>(timeline.events.length);
+
+  const orderedAssets = Array.from(assetToInputIndex.entries()).sort((a, b) => a[1] - b[1]);
+  orderedAssets.forEach(([resolvedAsset, inputIndex], assetOrder) => {
+    const eventSlots = assetEventSlots.get(resolvedAsset) ?? [];
+    if (eventSlots.length === 0) {
+      return;
+    }
+
+    const splitLabels = eventSlots.map((_, splitIndex) => `[src${assetOrder}_${splitIndex}]`);
+    const sourceInputLabel = `[${inputIndex}:a]`;
+
+    if (eventSlots.length === 1) {
+      filterParts.push(`${sourceInputLabel}anull${splitLabels[0]}`);
+    } else {
+      filterParts.push(`${sourceInputLabel}asplit=${eventSlots.length}${splitLabels.join("")}`);
+    }
+
+    eventSlots.forEach((eventIndex, splitIndex) => {
+      eventSourceLabels[eventIndex] = splitLabels[splitIndex] as string;
+    });
+  });
+
   timeline.events.forEach((event, index) => {
     const route = stemRouting[event.stem] ?? "stereo";
     const panFilter = buildStemPanFilter(route);
-    const sourceLabel = `[${index + 1}:a]`;
+    const sourceLabel = eventSourceLabels[index];
+    if (!sourceLabel) {
+      throw new Error(`[audio-renderer] Missing prepared source label for event index ${index}`);
+    }
     const routedLabel = `[r${index}]`;
     const inputLabel = panFilter ? routedLabel : sourceLabel;
     const delayMs = Math.max(0, Math.round(event.timestamp_ms));
