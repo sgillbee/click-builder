@@ -26,7 +26,7 @@
   "scripts": {
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:bdd": "node --loader ts-node/esm ./node_modules/@cucumber/cucumber/bin/cucumber.js tests/bdd/**/*.feature --import tests/bdd/**/*.steps.ts --tags \"not @pending and not @real\"",
-    "test:bdd:real": "node --loader ts-node/esm ./node_modules/@cucumber/cucumber/bin/cucumber.js tests/bdd/**/*.feature --import tests/bdd/**/*.steps.ts --tags \"@real and not @pending\""
+    "test:bdd": "node -e \"require('fs').mkdirSync('reports/bdd/mock',{recursive:true})\" && node --loader ts-node/esm ./node_modules/@cucumber/cucumber/bin/cucumber.js tests/bdd/**/*.feature --import tests/bdd/**/*.steps.ts --tags \"not @pending and not @real\" --format pretty --format html:reports/bdd/mock/report.html",
+    "test:bdd:real": "node -e \"require('fs').mkdirSync('reports/bdd/real',{recursive:true})\" && node --loader ts-node/esm ./node_modules/@cucumber/cucumber/bin/cucumber.js tests/bdd/**/*.feature --import tests/bdd/**/*.steps.ts --tags \"@real and not @pending\" --format pretty --format html:reports/bdd/real/report.html"
   }
 }

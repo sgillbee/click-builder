@@ -213,6 +213,15 @@ Given("the simple intro click with cues midbeat fixture config and reference wav
   expect(fs.existsSync(state.referenceWavPath)).toBe(true);
 });
 
+Given("the complex 6-8 click cues fixture config and reference wav", () => {
+  const repoRoot = process.cwd();
+  state.fixtureConfigPath = path.join(repoRoot, "tests", "fixtures", "golden", "complex-6-8-click-cues.yaml");
+  state.referenceWavPath = path.join(repoRoot, "tests", "fixtures", "golden", "complex-6-8-click-cues.wav");
+
+  expect(fs.existsSync(state.fixtureConfigPath)).toBe(true);
+  expect(fs.existsSync(state.referenceWavPath)).toBe(true);
+});
+
 When("I render the simple intro click wav from the fixture config", async () => {
   const yamlContent = fs.readFileSync(state.fixtureConfigPath as string, "utf-8");
   state.ast = parseConfigToAst(yamlContent);

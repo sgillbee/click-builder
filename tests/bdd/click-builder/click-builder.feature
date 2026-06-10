@@ -73,6 +73,12 @@ Feature: Click builder pipeline
     When I render the simple intro click wav from the fixture config
     Then the rendered wav matches the approved reference wav
 
+  @real
+  Scenario: Render complex 6-8 click cues WAV and match approved reference
+    Given the complex 6-8 click cues fixture config and reference wav
+    When I render the simple intro click wav from the fixture config
+    Then the rendered wav matches the approved reference wav
+
   @mock
   Scenario: Build the final video through the pipeline with mocked media edges
     Given a valid YAML config and an input video file
