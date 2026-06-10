@@ -20,3 +20,13 @@ Feature: Video muxing and sync alignment
     Given positive video delay is required
     When output is muxed for MVP mode
     Then the video stream starts after the configured delay window
+
+  Scenario: Zero downbeat offset produces no additional video lead
+    Given zero video delay is required
+    When muxing is executed
+    Then the mux offset is exactly zero seconds
+
+  Scenario: Negative mux offsets delay audio stream for alignment
+    Given a negative video downbeat offset is provided
+    When muxing is executed
+    Then the audio stream starts after the configured delay window

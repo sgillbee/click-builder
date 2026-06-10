@@ -25,6 +25,7 @@ build/
 out/
 tmp/
 .vite/
+reports/
 
 # Coverage
 coverage/

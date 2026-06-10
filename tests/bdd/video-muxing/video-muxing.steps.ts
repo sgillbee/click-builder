@@ -42,6 +42,24 @@ Given("positive video delay is required", () => {
   };
 });
 
+Given("zero video delay is required", () => {
+  state.input = {
+    video_downbeat_offset_ms: 0,
+    generated_audio_path: "generated-click.wav",
+    original_video_path: "input-video.mp4",
+    output_video_path: "output-video.mp4",
+  };
+});
+
+Given("a negative video downbeat offset is provided", () => {
+  state.input = {
+    video_downbeat_offset_ms: -250,
+    generated_audio_path: "generated-click.wav",
+    original_video_path: "input-video.mp4",
+    output_video_path: "output-video.mp4",
+  };
+});
+
 When("muxing is executed", () => {
   state.args = buildMuxArgs(state.input as MuxerInput);
 });
@@ -85,4 +103,24 @@ Then("the video stream starts after the configured delay window", () => {
 
   expect(offsetSeconds).toBeGreaterThan(0);
   expect(args[offsetIndex + 1]).toBe("1.500000");
+});
+
+Then("the mux offset is exactly zero seconds", () => {
+  const args = state.args as string[];
+  const offsetIndex = args.indexOf("-itsoffset");
+
+  expect(offsetIndex).toBeGreaterThan(-1);
+  expect(args[offsetIndex + 1]).toBe("0.000000");
+});
+
+Then("the audio stream starts after the configured delay window", () => {
+  const args = state.args as string[];
+  const offsetIndex = args.indexOf("-itsoffset");
+
+  expect(offsetIndex).toBeGreaterThan(-1);
+  expect(args[offsetIndex + 1]).toBe("0.250000");
+
+  // For negative offsets, ffmpeg applies -itsoffset to the audio input.
+  expect(args.indexOf("input-video.mp4")).toBeLessThan(offsetIndex);
+  expect(offsetIndex).toBeLessThan(args.indexOf("generated-click.wav"));
 });

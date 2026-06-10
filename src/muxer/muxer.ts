@@ -33,7 +33,9 @@ export async function muxVideo(input: MuxerInput): Promise<string> {
   const args = buildMuxArgs(input);
   const offsetIndex = args.indexOf("-itsoffset");
   const offsetSeconds = offsetIndex >= 0 ? args[offsetIndex + 1] : "unknown";
-  console.error(`[video-muxer] Applying -itsoffset of ${offsetSeconds}s to video stream...`);
+  const delaysVideo = input.video_downbeat_offset_ms >= 0;
+  const streamLabel = delaysVideo ? "video" : "audio";
+  console.error(`[video-muxer] Applying -itsoffset of ${offsetSeconds}s to ${streamLabel} stream...`);
 
   await runFfmpeg(args);
 
@@ -52,14 +54,38 @@ export function isSupportedOutputConfig(outputPath: string, audioCodec: string):
 }
 
 export function buildMuxArgs(input: MuxerInput): string[] {
-  const offsetSeconds = input.video_downbeat_offset_ms / 1000.0;
+  const offsetSeconds = Math.abs(input.video_downbeat_offset_ms) / 1000.0;
   const audioCodec = input.audio_codec ?? "aac";
+
+  // D >= 0: delay video stream. D < 0: delay audio stream.
+  if (input.video_downbeat_offset_ms >= 0) {
+    return [
+      "-y",
+      "-itsoffset",
+      offsetSeconds.toFixed(6),
+      "-i",
+      input.original_video_path,
+      "-i",
+      input.generated_audio_path,
+      "-map",
+      "0:v:0",
+      "-map",
+      "1:a:0",
+      "-c:v",
+      "copy",
+      "-c:a",
+      audioCodec,
+      "-shortest",
+      input.output_video_path,
+    ];
+  }
+
   return [
     "-y",
-    "-itsoffset",
-    offsetSeconds.toFixed(6),
     "-i",
     input.original_video_path,
+    "-itsoffset",
+    offsetSeconds.toFixed(6),
     "-i",
     input.generated_audio_path,
     "-map",

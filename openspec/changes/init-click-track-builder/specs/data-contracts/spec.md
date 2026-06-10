@@ -14,6 +14,13 @@ The parser output and timeline-generator input SHALL strictly conform to a defin
 - **WHEN** passing data downstream from the `config-parser`
 - **THEN** the payload MUST be a JSON object containing `video_downbeat_offset_ms` (as a float) and a flattened array of `timeline_commands` where every section explicitly declares its calculated `bpm` and `meter`.
 
+### Requirement: Muxer Input Contract
+The muxer input SHALL carry a signed floating-point alignment delta in milliseconds.
+
+#### Scenario: Signed alignment payload
+- **WHEN** data is passed into the `video-muxer`
+- **THEN** `video_downbeat_offset_ms` MAY be positive, zero, or negative to represent the stream that should be delayed for alignment.
+
 ### Requirement: Timeline JSON Pipeline Contract
 The timeline-generator output and audio-renderer input SHALL strictly conform to a Timeline JSON schema representing discrete multi-track stems. All timestamps MUST be floating-point values to prevent fractional sample jitter.
 

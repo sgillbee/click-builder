@@ -93,6 +93,26 @@ describe("muxVideo", () => {
     const args = buildMuxArgs(input);
     expect(args).toContain("-itsoffset");
     expect(args[args.indexOf("-itsoffset") + 1]).toBe("4.230500");
+    expect(args.indexOf("-itsoffset")).toBeLessThan(args.indexOf("input.mp4"));
+    expect(args[args.indexOf("-c:v") + 1]).toBe("copy");
+    expect(args[args.indexOf("-c:a") + 1]).toBe("aac");
+  });
+
+  it("builds ffmpeg args that delay audio when offset is negative", () => {
+    const input: MuxerInput = {
+      video_downbeat_offset_ms: -1500,
+      generated_audio_path: "audio.wav",
+      original_video_path: "input.mp4",
+      output_video_path: "output.mp4",
+    };
+
+    const args = buildMuxArgs(input);
+    expect(args).toContain("-itsoffset");
+    expect(args[args.indexOf("-itsoffset") + 1]).toBe("1.500000");
+
+    // For negative offsets, video is first input and offset is applied to audio input.
+    expect(args.indexOf("input.mp4")).toBeLessThan(args.indexOf("-itsoffset"));
+    expect(args.indexOf("-itsoffset")).toBeLessThan(args.indexOf("audio.wav"));
     expect(args[args.indexOf("-c:v") + 1]).toBe("copy");
     expect(args[args.indexOf("-c:a") + 1]).toBe("aac");
   });

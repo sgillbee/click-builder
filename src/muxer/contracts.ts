@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 export const MuxerInputSchema = z.object({
-  video_downbeat_offset_ms: z.number().nonnegative(),
+  // Signed alignment delta in ms. Positive delays video; negative delays audio.
+  video_downbeat_offset_ms: z.number(),
   generated_audio_path: z.string(),
   original_video_path: z.string(),
   output_video_path: z.string(),
