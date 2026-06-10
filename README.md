@@ -28,6 +28,9 @@ npm install
 npm run test
 npm run test:coverage
 npm run test:bdd
+npm run fixtures:video-sync
+npm run test:bdd:real
+npm run test:bdd:real:muxsync
 ```
 
 ## Tests
@@ -35,6 +38,42 @@ npm run test:bdd
 - Unit tests live next to the source they exercise as `*.test.ts` files.
 - BDD tests live under `tests/bdd/<feature>/` as `.feature` files with matching step definitions.
 - Coverage is available via `npm run test:coverage`.
+- Real mux sync fixtures are generated with `npm run fixtures:video-sync` into `tests/fixtures/video-sync/`.
+- Targeted real mux sync checks run with `npm run test:bdd:real:muxsync`.
+- For real/mock selection, pass npm flags directly, e.g. `npm run test:bdd --real --muxsync`.
+- For ad-hoc BDD selection, pass cucumber args through `npm run test:bdd:run -- ...`.
+
+Example:
+
+```bash
+npm run test:bdd --real --muxsync
+
+npm run test:bdd:run -- --tags "@real and @muxsync and not @pending" --format html:test-artifacts/bdd/real/custom-report.html
+```
+
+## Real Mux Sync Workflow
+
+1. Regenerate deterministic video fixtures:
+
+```bash
+npm run fixtures:video-sync
+```
+
+2. Run focused real mux sync scenarios (`D = 0`, `D > 0`, `D < 0`):
+
+```bash
+npm run test:bdd:real:muxsync
+```
+
+3. Run mux-sync scenarios and inspect captured muxed outputs:
+
+```bash
+npm run test:bdd --real --muxsync
+```
+
+Muxed output artifacts are always written under `test-artifacts/bdd/real/mux-sync/muxed-output/`.
+
+BDD HTML reports are written under `test-artifacts/bdd/`.
 
 ## Project Structure
 

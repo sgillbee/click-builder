@@ -1,0 +1,386 @@
+{
+  "generated_at": "2026-06-10T02:29:25.279Z",
+  "defaults": {
+    "frame_rate": 60,
+    "resolution": "640x360",
+    "pixel_format": "yuv420p",
+    "video_codec": "libx264",
+    "pulse_style": "corner_decay"
+  },
+  "fixtures": [
+    {
+      "id": "baseline-4-4-70",
+      "path": "tests/fixtures/video-sync/baseline-4-4-70.mp4",
+      "meter": "4/4",
+      "bpm": 70,
+      "frame_rate": 60,
+      "resolution": "640x360",
+      "leader_ms": 1714.285714,
+      "beat_duration_ms": 857.142857,
+      "measure_duration_ms": 3428.571429,
+      "expected_pulse_timestamps_ms": [
+        1714.285714,
+        2571.428571,
+        3428.571429,
+        4285.714286,
+        5142.857143,
+        6000,
+        6857.142857,
+        7714.285714
+      ],
+      "expected_downbeat_timestamps_ms": [
+        1714.285714,
+        5142.857143
+      ],
+      "expected_section_windows": []
+    },
+    {
+      "id": "baseline-6-8-70",
+      "path": "tests/fixtures/video-sync/baseline-6-8-70.mp4",
+      "meter": "6/8",
+      "bpm": 70,
+      "frame_rate": 60,
+      "resolution": "640x360",
+      "leader_ms": 857.142857,
+      "beat_duration_ms": 428.571429,
+      "measure_duration_ms": 2571.428571,
+      "expected_pulse_timestamps_ms": [
+        857.142857,
+        1285.714286,
+        1714.285714,
+        2142.857143,
+        2571.428571,
+        3000,
+        3428.571429,
+        3857.142857,
+        4285.714286,
+        4714.285714,
+        5142.857143,
+        5571.428571
+      ],
+      "expected_downbeat_timestamps_ms": [
+        857.142857,
+        3428.571429
+      ],
+      "expected_section_windows": []
+    },
+    {
+      "id": "baseline-4-4-80",
+      "path": "tests/fixtures/video-sync/baseline-4-4-80.mp4",
+      "meter": "4/4",
+      "bpm": 80,
+      "frame_rate": 60,
+      "resolution": "640x360",
+      "leader_ms": 1500,
+      "beat_duration_ms": 750,
+      "measure_duration_ms": 3000,
+      "expected_pulse_timestamps_ms": [
+        1500,
+        2250,
+        3000,
+        3750,
+        4500,
+        5250,
+        6000,
+        6750
+      ],
+      "expected_downbeat_timestamps_ms": [
+        1500,
+        4500
+      ],
+      "expected_section_windows": []
+    },
+    {
+      "id": "baseline-6-8-80",
+      "path": "tests/fixtures/video-sync/baseline-6-8-80.mp4",
+      "meter": "6/8",
+      "bpm": 80,
+      "frame_rate": 60,
+      "resolution": "640x360",
+      "leader_ms": 750,
+      "beat_duration_ms": 375,
+      "measure_duration_ms": 2250,
+      "expected_pulse_timestamps_ms": [
+        750,
+        1125,
+        1500,
+        1875,
+        2250,
+        2625,
+        3000,
+        3375,
+        3750,
+        4125,
+        4500,
+        4875
+      ],
+      "expected_downbeat_timestamps_ms": [
+        750,
+        3000
+      ],
+      "expected_section_windows": []
+    },
+    {
+      "id": "baseline-4-4-120",
+      "path": "tests/fixtures/video-sync/baseline-4-4-120.mp4",
+      "meter": "4/4",
+      "bpm": 120,
+      "frame_rate": 60,
+      "resolution": "640x360",
+      "leader_ms": 1000,
+      "beat_duration_ms": 500,
+      "measure_duration_ms": 2000,
+      "expected_pulse_timestamps_ms": [
+        1000,
+        1500,
+        2000,
+        2500,
+        3000,
+        3500,
+        4000,
+        4500
+      ],
+      "expected_downbeat_timestamps_ms": [
+        1000,
+        3000
+      ],
+      "expected_section_windows": []
+    },
+    {
+      "id": "baseline-6-8-120",
+      "path": "tests/fixtures/video-sync/baseline-6-8-120.mp4",
+      "meter": "6/8",
+      "bpm": 120,
+      "frame_rate": 60,
+      "resolution": "640x360",
+      "leader_ms": 500,
+      "beat_duration_ms": 250,
+      "measure_duration_ms": 1500,
+      "expected_pulse_timestamps_ms": [
+        500,
+        750,
+        1000,
+        1250,
+        1500,
+        1750,
+        2000,
+        2250,
+        2500,
+        2750,
+        3000,
+        3250
+      ],
+      "expected_downbeat_timestamps_ms": [
+        500,
+        2000
+      ],
+      "expected_section_windows": []
+    },
+    {
+      "id": "scenario-d0-4-4-80",
+      "path": "tests/fixtures/video-sync/scenario-d0-4-4-80.mp4",
+      "meter": "4/4",
+      "bpm": 80,
+      "frame_rate": 60,
+      "resolution": "640x360",
+      "leader_ms": 1500,
+      "beat_duration_ms": 750,
+      "measure_duration_ms": 3000,
+      "expected_pulse_timestamps_ms": [
+        1500,
+        2250,
+        3000,
+        3750,
+        4500,
+        5250,
+        6000,
+        6750
+      ],
+      "expected_downbeat_timestamps_ms": [
+        1500,
+        4500
+      ],
+      "expected_section_windows": []
+    },
+    {
+      "id": "scenario-dpos-4-4-80",
+      "path": "tests/fixtures/video-sync/scenario-dpos-4-4-80.mp4",
+      "meter": "4/4",
+      "bpm": 80,
+      "frame_rate": 60,
+      "resolution": "640x360",
+      "leader_ms": 750,
+      "beat_duration_ms": 750,
+      "measure_duration_ms": 3000,
+      "expected_pulse_timestamps_ms": [
+        750,
+        1500,
+        2250,
+        3000,
+        3750,
+        4500,
+        5250,
+        6000
+      ],
+      "expected_downbeat_timestamps_ms": [
+        750,
+        3750
+      ],
+      "expected_section_windows": []
+    },
+    {
+      "id": "scenario-dneg-4-4-80",
+      "path": "tests/fixtures/video-sync/scenario-dneg-4-4-80.mp4",
+      "meter": "4/4",
+      "bpm": 80,
+      "frame_rate": 60,
+      "resolution": "640x360",
+      "leader_ms": 2250,
+      "beat_duration_ms": 750,
+      "measure_duration_ms": 3000,
+      "expected_pulse_timestamps_ms": [
+        2250,
+        3000,
+        3750,
+        4500,
+        5250,
+        6000,
+        6750,
+        7500
+      ],
+      "expected_downbeat_timestamps_ms": [
+        2250,
+        5250
+      ],
+      "expected_section_windows": []
+    },
+    {
+      "id": "sections-4-4-80",
+      "path": "tests/fixtures/video-sync/sections-4-4-80.mp4",
+      "meter": "4/4",
+      "bpm": 80,
+      "frame_rate": 60,
+      "resolution": "640x360",
+      "leader_ms": 0,
+      "beat_duration_ms": 750,
+      "measure_duration_ms": 3000,
+      "expected_pulse_timestamps_ms": [
+        0,
+        750,
+        1500,
+        2250,
+        3000,
+        3750,
+        4500,
+        5250,
+        6000,
+        6750,
+        7500,
+        8250,
+        9000,
+        9750,
+        10500,
+        11250,
+        12000,
+        12750,
+        13500,
+        14250,
+        15000,
+        15750,
+        16500,
+        17250,
+        18000,
+        18750,
+        19500,
+        20250,
+        21000,
+        21750,
+        22500,
+        23250,
+        24000,
+        24750,
+        25500,
+        26250,
+        27000,
+        27750,
+        28500,
+        29250
+      ],
+      "expected_downbeat_timestamps_ms": [
+        0,
+        3000,
+        6000,
+        9000,
+        12000,
+        15000,
+        18000,
+        21000,
+        24000,
+        27000
+      ],
+      "expected_section_windows": [
+        {
+          "name": "Lead",
+          "start_ms": 0,
+          "end_ms": 6000,
+          "visible": false,
+          "designator": "lead"
+        },
+        {
+          "name": "Intro",
+          "start_ms": 6000,
+          "end_ms": 12000,
+          "visible": true,
+          "designator": "song"
+        },
+        {
+          "name": "Verse 1",
+          "start_ms": 12000,
+          "end_ms": 18000,
+          "visible": true,
+          "designator": "song"
+        },
+        {
+          "name": "Chorus",
+          "start_ms": 18000,
+          "end_ms": 24000,
+          "visible": true,
+          "designator": "song"
+        },
+        {
+          "name": "Outro",
+          "start_ms": 24000,
+          "end_ms": 30000,
+          "visible": true,
+          "designator": "song"
+        }
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "d0",
+      "fixture_id": "scenario-d0-4-4-80",
+      "fixture_path": "tests/fixtures/video-sync/scenario-d0-4-4-80.mp4",
+      "audio_leader_ms": 1500,
+      "video_leader_ms": 1500,
+      "signed_delta_ms": 0
+    },
+    {
+      "id": "dpos",
+      "fixture_id": "scenario-dpos-4-4-80",
+      "fixture_path": "tests/fixtures/video-sync/scenario-dpos-4-4-80.mp4",
+      "audio_leader_ms": 1500,
+      "video_leader_ms": 750,
+      "signed_delta_ms": 750
+    },
+    {
+      "id": "dneg",
+      "fixture_id": "scenario-dneg-4-4-80",
+      "fixture_path": "tests/fixtures/video-sync/scenario-dneg-4-4-80.mp4",
+      "audio_leader_ms": 1500,
+      "video_leader_ms": 2250,
+      "signed_delta_ms": -750
+    }
+  ]
+}

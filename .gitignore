@@ -26,6 +26,7 @@ out/
 tmp/
 .vite/
 reports/
+test-artifacts/
 
 # Coverage
 coverage/
