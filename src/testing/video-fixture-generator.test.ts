@@ -1,5 +1,22 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import { spawnSync } from "child_process";
 import { __testables, type FixtureDefinition } from "./video-fixture-generator.js";
+import { generateVideoSyncFixtures, getDefaultFixtureGeneratorConfig } from "./video-fixture-generator.js";
+
+vi.mock("child_process", () => ({
+  spawnSync: vi.fn(() => ({
+    status: 0,
+    stderr: Buffer.from(""),
+    stdout: Buffer.from(""),
+  })),
+}));
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("video-fixture-generator helpers", () => {
   it("computes section windows with lead hidden and song sections visible", () => {
@@ -135,5 +152,41 @@ describe("video-fixture-generator helpers", () => {
 
   it("throws when no supported drawtext font file exists", () => {
     expect(() => __testables.resolveDrawTextFontArg(() => false)).toThrow("No supported drawtext font file found on this host.");
+  });
+
+  it("generates a fixture manifest from the helper pipeline", () => {
+    const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "click-builder-fixtures-"));
+
+    const manifest = generateVideoSyncFixtures({
+      outputDir: workDir,
+      frameRate: 30,
+      resolution: { width: 320, height: 180 },
+      tempos: [80],
+      previewEnabled: false,
+      previewDir: path.join(workDir, "preview"),
+      pulseStyle: "fullscreen",
+    });
+
+    expect(vi.mocked(spawnSync)).toHaveBeenCalled();
+    expect(manifest.defaults).toMatchObject({
+      frame_rate: 30,
+      resolution: "320x180",
+      pulse_style: "fullscreen",
+      video_codec: "libx264",
+    });
+    expect(manifest.fixtures).toHaveLength(7);
+    expect(manifest.scenarios).toHaveLength(4);
+    expect(manifest.fixtures.find((fixture) => fixture.id === "sections-6-8-70")?.expected_section_windows[0]?.designator).toBe("click");
+    expect(manifest.scenarios.find((scenario) => scenario.id === "d0")?.signed_delta_ms).toBe(0);
+
+    fs.rmSync(workDir, { recursive: true, force: true });
+  });
+
+  it("returns the default fixture generator config", () => {
+    const config = getDefaultFixtureGeneratorConfig();
+
+    expect(config.outputDir).toContain(path.join("tests", "fixtures", "video-sync"));
+    expect(config.previewEnabled).toBe(false);
+    expect(config.tempos).toEqual([70, 80, 120]);
   });
 });

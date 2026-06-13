@@ -5,6 +5,42 @@ export const MeterSchema = z.tuple([z.number(), z.number()]);
 export const MetronomeModeSchema = z.enum(["in-6", "in-4", "in-2"]);
 export const SectionDesignatorSchema = z.enum(["song", "click"]);
 
+export const StemRoutingSchema = z.object({
+  left_percent: z.number().int().min(0).max(100).optional(),
+  right_percent: z.number().int().min(0).max(100).optional(),
+});
+
+export const GeneratedStemSourceSchema = z.object({
+  type: z.literal("generated"),
+  generated_stem: z.enum(["click", "cue"]),
+});
+
+export const SourceVideoAudioStemSourceSchema = z.object({
+  type: z.literal("source-video-audio"),
+});
+
+export const StemSourceSchema = z.union([
+  GeneratedStemSourceSchema,
+  SourceVideoAudioStemSourceSchema,
+]);
+
+export const StemConfigSchema = z.object({
+  id: z.string(),
+  source: StemSourceSchema,
+  routing: StemRoutingSchema.optional(),
+});
+
+export const NormalizedStemRoutingSchema = z.object({
+  left: z.number().int().min(0).max(100),
+  right: z.number().int().min(0).max(100),
+});
+
+export const NormalizedStemSchema = z.object({
+  id: z.string(),
+  source: StemSourceSchema,
+  routing: NormalizedStemRoutingSchema,
+});
+
 // ==========================================
 // 1. YAML Configuration Input Schema
 // ==========================================
@@ -30,6 +66,8 @@ export const YamlConfigSchema = z.object({
   tempo: z.number().positive(),
   time_signature: z.string(),
   click_profile: z.string().optional(),
+  input_video_path: z.string().optional(),
+  output_video_path: z.string().optional(),
   count_in_enabled: z.boolean().optional(),
   metronome_mode: MetronomeModeSchema.optional(),
   section_markers_enabled: z.boolean().optional(),
@@ -37,6 +75,7 @@ export const YamlConfigSchema = z.object({
   mid_beat_filler_enabled: z.boolean().optional(),
   video_downbeat_offset_ms: z.number().nonnegative().optional(), // Milliseconds
   video_downbeat_offset: z.number().nonnegative().optional(), // Legacy alias
+  stems: z.array(StemConfigSchema).optional(),
   structure: z.array(SectionConfigSchema),
 }).superRefine((value, ctx) => {
   if (value.video_downbeat_offset_ms === undefined && value.video_downbeat_offset === undefined) {
@@ -75,6 +114,9 @@ export const AstJsonSchema = z.object({
   project_name: z.string(),
   video_downbeat_offset_ms: z.number().nonnegative(), // Floating point explicit in docs
   click_profile: z.string().optional(),
+  input_video_path: z.string().optional(),
+  output_video_path: z.string().optional(),
+  stems: z.array(NormalizedStemSchema).optional(),
   timeline_commands: z.array(TimelineCommandSchema),
 });
 
@@ -93,6 +135,9 @@ export const TimelineEventSchema = z.object({
 export const TimelineJsonSchema = z.object({
   video_downbeat_offset_ms: z.number().nonnegative(),
   click_profile: z.string().optional(),
+  input_video_path: z.string().optional(),
+  output_video_path: z.string().optional(),
+  stems: z.array(NormalizedStemSchema).optional(),
   total_duration_ms: z.number().nonnegative(),
   events: z.array(TimelineEventSchema),
 });

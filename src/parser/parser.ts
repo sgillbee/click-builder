@@ -22,9 +22,27 @@ function parseMeter(meterString: string): [number, number] {
   return [top, bottom];
 }
 
-  function isClickSectionName(sectionName: string): boolean {
-    return sectionName.toLowerCase().replace(/[^a-z0-9]/g, "_") === "click";
+function isClickSectionName(sectionName: string): boolean {
+  return sectionName.toLowerCase().replace(/[^a-z0-9]/g, "_") === "click";
+}
+
+function normalizeStemRouting(stem: { routing?: { left_percent?: number | undefined; right_percent?: number | undefined } | undefined }): { left: number; right: number } {
+  return {
+    left: stem.routing?.left_percent ?? 100,
+    right: stem.routing?.right_percent ?? 100,
+  };
+}
+
+function normalizeStemSource(source: { type: string; generated_stem?: string }): { type: "generated"; generated_stem: "click" | "cue" } | { type: "source-video-audio" } {
+  if (source.type === "generated") {
+    return {
+      type: "generated",
+      generated_stem: source.generated_stem === "cue" ? "cue" : "click",
+    };
   }
+
+  return { type: "source-video-audio" };
+}
 
 export function parseConfigToAst(yamlContent: string): AstJson {
   let parsed;
@@ -44,6 +62,11 @@ export function parseConfigToAst(yamlContent: string): AstJson {
   const baseSectionMarkersEnabled = config.section_markers_enabled ?? true;
   const baseDownbeatEmphasisEnabled = config.downbeat_emphasis_enabled ?? true;
   const baseMidBeatFillerEnabled = config.mid_beat_filler_enabled ?? false;
+  const normalizedStems = config.stems?.map((stem) => ({
+    id: stem.id,
+    source: normalizeStemSource(stem.source),
+    routing: normalizeStemRouting(stem),
+  }));
 
   const commands = config.structure.map((section) => {
     const meter = section.time_signature ? parseMeter(section.time_signature) : baseMeter;
@@ -80,6 +103,9 @@ export function parseConfigToAst(yamlContent: string): AstJson {
     project_name: config.name,
     video_downbeat_offset_ms: config.video_downbeat_offset_ms ?? config.video_downbeat_offset ?? 0,
     click_profile: config.click_profile,
+    input_video_path: config.input_video_path,
+    output_video_path: config.output_video_path,
+    stems: normalizedStems,
     timeline_commands: commands,
   };
 }

@@ -151,7 +151,7 @@ When("the pipeline runs", () => {
 
 Then("the failing stage logs diagnostics to stderr", () => {
   expect((state.cliStdErr ?? "").length).toBeGreaterThan(0);
-  expect(state.cliStdErr).toContain("ffmpeg failed");
+  expect(state.cliStdErr).toContain("ffprobe duration probe failed");
 });
 
 Then("the pipeline exits non-zero", () => {

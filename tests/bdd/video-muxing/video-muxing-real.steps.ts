@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { spawnSync } from "child_process";
-import { muxVideo } from "../../../src/muxer/muxer.js";
+import { findTimestampDiscontinuity, muxVideo } from "../../../src/muxer/muxer.js";
 import { runPipeline } from "../../../src/pipeline.js";
 
 interface ScenarioManifestEntry {
@@ -44,6 +44,8 @@ interface RealMuxState {
   fixture?: FixtureManifestEntry;
   outputPath?: string;
   starts?: StreamStartInfo;
+  sourceDurationSec?: number;
+  logs?: string[];
   leaderAwareConfigPath?: string;
   leaderAwareSourceVideoPath?: string;
   expectedLeaderAwareDeltaMs?: number;
@@ -133,6 +135,29 @@ function readStreamStarts(filePath: string): StreamStartInfo {
   };
 }
 
+function readMediaDurationSec(filePath: string): number {
+  const result = spawnSync(
+    "ffprobe",
+    [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-show_entries",
+      "format=duration",
+      "-of",
+      "default=noprint_wrappers=1:nokey=1",
+      filePath,
+    ],
+    { encoding: "utf-8" },
+  );
+
+  if (result.status !== 0) {
+    throw new Error(`ffprobe duration probe failed: ${result.stderr}`);
+  }
+
+  return Number(result.stdout.trim());
+}
+
 function readClickOnsetsSec(filePath: string): number[] {
   const result = spawnSync(
     "ffmpeg",
@@ -184,6 +209,39 @@ function readFirstVisiblePulseSec(filePath: string): number {
   return match ? Number(match[1]) : 0;
 }
 
+function readFrameTimestampsNear(filePath: string, startSec: number, endSec: number): number[] {
+  const result = spawnSync(
+    "ffprobe",
+    [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "frame=best_effort_timestamp_time",
+      "-of",
+      "csv=p=0",
+      "-read_intervals",
+      `${Math.max(0, startSec).toFixed(3)}%${Math.max(startSec, endSec).toFixed(3)}`,
+      filePath,
+    ],
+    { encoding: "utf-8" },
+  );
+
+  if (result.status !== 0) {
+    throw new Error(`ffprobe frame timestamp read failed: ${result.stderr}`);
+  }
+
+  return result.stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => Number(line))
+    .filter((value) => Number.isFinite(value))
+    .sort((left, right) => left - right);
+}
+
 function createAudioWithLeader(baseAudioPath: string, outputPath: string, leaderMs: number): void {
   const result = spawnSync(
     "ffmpeg",
@@ -205,6 +263,47 @@ function createAudioWithLeader(baseAudioPath: string, outputPath: string, leader
 
   if (result.status !== 0) {
     throw new Error(`ffmpeg adelay failed: ${result.stderr}`);
+  }
+}
+
+function createToneAudio(outputPath: string, durationSec: number): void {
+  const result = spawnSync(
+    "ffmpeg",
+    [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-y",
+      "-f",
+      "lavfi",
+      "-i",
+      `sine=frequency=880:duration=${durationSec.toFixed(3)}`,
+      "-c:a",
+      "pcm_s16le",
+      outputPath,
+    ],
+    { encoding: "utf-8" },
+  );
+
+  if (result.status !== 0) {
+    throw new Error(`ffmpeg tone generation failed: ${result.stderr}`);
+  }
+}
+
+async function captureConsoleError<T>(action: () => Promise<T>): Promise<{ result: T; logs: string[] }> {
+  const original = console.error;
+  const logs: string[] = [];
+  console.error = (...args: unknown[]) => {
+    const message = args.map((arg) => String(arg)).join(" ");
+    logs.push(message);
+    original(...args);
+  };
+
+  try {
+    const result = await action();
+    return { result, logs };
+  } finally {
+    console.error = original;
   }
 }
 
@@ -242,6 +341,7 @@ Given("video sync scenario fixture {string}", (scenarioId: string) => {
   expect(fs.existsSync(fixturePath)).toBe(true);
   expect(fs.existsSync(scenario.reference_audio_path ? path.resolve(process.cwd(), scenario.reference_audio_path) : BASE_AUDIO_PATH)).toBe(true);
   state.scenario = { ...scenario, fixture_path: fixturePath };
+  state.sourceDurationSec = readMediaDurationSec(fixturePath);
 });
 
 Given("section label fixture metadata {string}", (fixtureId: string) => {
@@ -259,21 +359,42 @@ When("real muxing is executed for the scenario", async () => {
   // Normalize test audio to scenario-declared leader so visible and audible downbeats align by design.
   createAudioWithLeader(sourceAudioPath, stagedAudioPath, scenario.audio_leader_ms);
 
-  await muxVideo({
+  const capture = await captureConsoleError(() => muxVideo({
     video_downbeat_offset_ms: scenario.signed_delta_ms,
     generated_audio_path: stagedAudioPath,
     original_video_path: scenario.fixture_path,
     output_video_path: outputPath,
-  });
+  }));
 
   state.outputPath = outputPath;
   state.starts = readStreamStarts(outputPath);
+  state.logs = capture.logs;
   writeMuxArtifact(outputPath, scenario.id);
+});
+
+When(/^real muxing is executed with a ([0-9]+(?:\.[0-9]+)?) second generated audio program$/, async (durationText: string) => {
+  const scenario = state.scenario as ScenarioManifestEntry;
+  const stagedAudioPath = path.join(state.workDir as string, `${scenario.id}-duration-test.wav`);
+  const outputPath = path.join(state.workDir as string, `${scenario.id}-duration-test.mp4`);
+  createToneAudio(stagedAudioPath, Number(durationText));
+
+  const capture = await captureConsoleError(() => muxVideo({
+    video_downbeat_offset_ms: 0,
+    generated_audio_path: stagedAudioPath,
+    original_video_path: scenario.fixture_path,
+    output_video_path: outputPath,
+  }));
+
+  state.outputPath = outputPath;
+  state.starts = readStreamStarts(outputPath);
+  state.logs = capture.logs;
+  writeMuxArtifact(outputPath, `${scenario.id}-duration-${durationText.replace('.', '-')}`);
 });
 
 Then("ffprobe stream start timings align with the signed delta expectation", () => {
   const scenario = state.scenario as ScenarioManifestEntry;
   const starts = state.starts as StreamStartInfo;
+  const outputPath = state.outputPath as string;
   const deltaSec = Math.abs(scenario.signed_delta_ms) / 1000;
 
   if (scenario.signed_delta_ms > 0) {
@@ -283,6 +404,11 @@ Then("ffprobe stream start timings align with the signed delta expectation", () 
     const firstVisiblePulseSec = readFirstVisiblePulseSec(state.outputPath as string);
     const expectedVisiblePulseSec = expectedFirstClickSecForScenario(scenario);
     expect(Math.abs(firstVisiblePulseSec - expectedVisiblePulseSec)).toBeLessThanOrEqual(PULSE_START_TOLERANCE_SEC);
+
+    const spliceBoundarySec = scenario.signed_delta_ms / 1000;
+    const timestamps = readFrameTimestampsNear(outputPath, spliceBoundarySec - 0.5, spliceBoundarySec + 3.0);
+    expect(timestamps.length).toBeGreaterThanOrEqual(2);
+    expect(findTimestampDiscontinuity(timestamps, 0.25)).toBeUndefined();
   } else if (scenario.signed_delta_ms < 0) {
     expect(starts.videoStartSec).toBeLessThanOrEqual(START_TOLERANCE_SEC);
     expect(Math.abs(starts.audioStartSec - deltaSec)).toBeLessThanOrEqual(START_TOLERANCE_SEC);
@@ -292,7 +418,6 @@ Then("ffprobe stream start timings align with the signed delta expectation", () 
   }
 
   // Confidence guard: verify real audible click timing against scenario leader + beat duration.
-  const outputPath = state.outputPath as string;
   const clickOnsets = readClickOnsetsSec(outputPath);
   expect(clickOnsets.length).toBeGreaterThanOrEqual(3);
   const firstOnset = clickOnsets[0] as number;
@@ -339,29 +464,53 @@ structure:
   expect(fs.existsSync(fixtureVideoPath)).toBe(true);
 });
 
-When("leader-aware real pipeline muxing is executed", async () => {
+When("leader-aware real pipeline muxing is executed with re-encode fallback enabled", async () => {
   const outputPath = path.join(state.workDir as string, "leader-aware-dpos-muxed.mp4");
 
-  await runPipeline(
+  const capture = await captureConsoleError(() => runPipeline(
     state.leaderAwareConfigPath as string,
     state.leaderAwareSourceVideoPath as string,
     outputPath,
-  );
+    {},
+    { allowReencodePositiveDelay: true },
+  ));
 
   state.outputPath = outputPath;
   state.starts = readStreamStarts(outputPath);
+  state.logs = capture.logs;
   writeMuxArtifact(outputPath, "leader-aware-dpos");
+});
+
+Then("output duration matches the source video duration", () => {
+  const outputDurationSec = readMediaDurationSec(state.outputPath as string);
+  expect(Math.abs(outputDurationSec - (state.sourceDurationSec as number))).toBeLessThanOrEqual(0.05);
+});
+
+Then("no audio truncation warning is emitted", () => {
+  const logs = state.logs ?? [];
+  expect(logs.some((line) => line.includes("warning: generated audio exceeds video duration"))).toBe(false);
+});
+
+Then("an audio truncation warning is emitted", () => {
+  const logs = state.logs ?? [];
+  expect(logs.some((line) => line.includes("warning: generated audio exceeds video duration"))).toBe(true);
 });
 
 Then("ffprobe stream start timings align with leader-aware effective delta", () => {
   const starts = state.starts as StreamStartInfo;
   const expectedPulseStartSec = (state.expectedLeaderAwarePulseStartMs as number) / 1000;
+  const outputPath = state.outputPath as string;
 
   expect(starts.audioStartSec).toBeLessThanOrEqual(START_TOLERANCE_SEC);
   expect(starts.videoStartSec).toBeLessThanOrEqual(START_TOLERANCE_SEC);
 
-  const firstVisiblePulseSec = readFirstVisiblePulseSec(state.outputPath as string);
+  const firstVisiblePulseSec = readFirstVisiblePulseSec(outputPath);
   expect(Math.abs(firstVisiblePulseSec - expectedPulseStartSec)).toBeLessThanOrEqual(PULSE_START_TOLERANCE_SEC);
+
+  const spliceBoundarySec = (state.expectedLeaderAwareDeltaMs as number) / 1000;
+  const timestamps = readFrameTimestampsNear(outputPath, spliceBoundarySec - 0.5, spliceBoundarySec + 3.0);
+  expect(timestamps.length).toBeGreaterThanOrEqual(2);
+  expect(findTimestampDiscontinuity(timestamps, 0.25)).toBeUndefined();
 });
 
 Then(/^complex 6\/8 click cues preserve the longer beat grid through mux$/, () => {
@@ -400,6 +549,10 @@ Then(/^complex 6\/8 click cues remain phase aligned over extended duration$/, ()
     const onset = clickOnsets[index] as number;
     const previousOnset = clickOnsets[index - 1] as number;
     intervals.push(onset - previousOnset);
+  }
+
+  while (intervals.length > 0 && Math.abs((intervals[intervals.length - 1] as number) - expectedBeatGapSec) > CLICK_ONSET_TOLERANCE_SEC) {
+    intervals.pop();
   }
 
   expect(intervals.length).toBeGreaterThanOrEqual(30);

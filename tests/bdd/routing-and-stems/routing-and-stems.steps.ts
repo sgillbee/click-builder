@@ -32,8 +32,8 @@ Given("room stem is routed to left channel only", () => {
 When("audio is rendered", () => {
   state.args = buildRenderArgs(state.timeline as TimelineJson, "out.wav", {
     stemRouting: {
-      click: "right",
-      room: "left",
+      click: { left: 0, right: 100 },
+      room: { left: 100, right: 0 },
     },
   });
 });
@@ -41,8 +41,8 @@ When("audio is rendered", () => {
 Then("output contains channel-specific routing as configured", () => {
   const filter = (state.args as string[])[(state.args as string[]).indexOf("-filter_complex") + 1] as string;
 
-  expect(filter).toContain("pan=stereo|c0=0*c0|c1=c0");
-  expect(filter).toContain("pan=stereo|c0=c0|c1=0*c0");
+  expect(filter).toContain("pan=stereo|c0=0.000000*c0|c1=1.000000*c0");
+  expect(filter).toContain("pan=stereo|c0=1.000000*c0|c1=0.000000*c0");
 });
 
 Given("cue stem routing is set to band-only", () => {
@@ -56,12 +56,12 @@ Given("cue stem routing is set to band-only", () => {
 When("output is generated", () => {
   state.args = buildRenderArgs(state.timeline as TimelineJson, "out.wav", {
     stemRouting: {
-      cue: "band-only",
+      cue: { left: 100, right: 0 },
     },
   });
 });
 
 Then("cues are absent from room channel output", () => {
   const filter = (state.args as string[])[(state.args as string[]).indexOf("-filter_complex") + 1] as string;
-  expect(filter).toContain("pan=stereo|c0=0*c0|c1=c0");
+  expect(filter).toContain("pan=stereo|c0=1.000000*c0|c1=0.000000*c0");
 });

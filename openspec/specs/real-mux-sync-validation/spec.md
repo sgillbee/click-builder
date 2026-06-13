@@ -12,7 +12,7 @@ The real BDD suite MUST validate mux sync behavior for D = 0, D > 0, and D < 0 s
 
 #### Scenario: Real mux validation with D > 0
 - **WHEN** the real BDD suite runs a positive-delta fixture
-- **THEN** observed sync indicates video delay behavior and aligned beat/downbeat pulses within tolerance.
+- **THEN** observed sync indicates validated video delay behavior, aligned beat/downbeat pulses within tolerance, and no splice-boundary timestamp discontinuity.
 
 #### Scenario: Real mux validation with D < 0
 - **WHEN** the real BDD suite runs a negative-delta fixture
@@ -24,6 +24,10 @@ The real mux validation pipeline SHALL use ffprobe-derived timing data as the so
 #### Scenario: Frame and audio timing extraction
 - **WHEN** a muxed output fixture is analyzed
 - **THEN** ffprobe extraction provides stream/frame/audio timing values that are compared against deterministic expected beat events.
+
+#### Scenario: Splice-boundary continuity check
+- **WHEN** a positive-delay muxed output is analyzed
+- **THEN** ffprobe-derived frame timestamps confirm continuity across the leader-to-body boundary.
 
 ### Requirement: Explicit Tolerance Contract
 Real sync assertions MUST apply explicit timing tolerance bounds.

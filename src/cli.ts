@@ -2,18 +2,28 @@
 import { runPipeline } from "./pipeline.js";
 
 async function main() {
-  const configPath = process.argv[2];
-  const originalVideoPath = process.argv[3];
-  const outputVideoPath = process.argv[4];
+  const rawArgs = process.argv.slice(2);
+  const allowReencodePositiveDelay = rawArgs.includes("--allow-reencode");
+  const positionalArgs = rawArgs.filter((arg) => arg !== "--allow-reencode");
+  const configPath = positionalArgs[0];
+  const originalVideoPath = positionalArgs[1];
+  const outputVideoPath = positionalArgs[2];
 
-  if (!configPath || !originalVideoPath || !outputVideoPath) {
-    console.error("Usage: click-builder <config.yaml> <input-video> <output-video>");
+  if (!configPath) {
+    console.error("Usage: click-builder [--allow-reencode] <config.yaml> [input-video] [output-video]");
+    console.error("Video paths may also be supplied in YAML, with CLI taking precedence.");
     process.exit(1);
   }
 
   try {
     console.error(`[pipeline] Starting click-track build for ${configPath}`);
-    const finalVideoPath = await runPipeline(configPath, originalVideoPath, outputVideoPath);
+    const finalVideoPath = await runPipeline(
+      configPath,
+      originalVideoPath,
+      outputVideoPath,
+      {},
+      { allowReencodePositiveDelay }
+    );
     console.log(JSON.stringify({ final_video: finalVideoPath }, null, 2));
     process.exit(0);
   } catch (error) {

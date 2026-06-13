@@ -137,6 +137,9 @@ export function generateTimeline(ast: AstJson): TimelineJson {
   return {
     video_downbeat_offset_ms: ast.video_downbeat_offset_ms,
     click_profile: ast.click_profile,
+    input_video_path: ast.input_video_path,
+    output_video_path: ast.output_video_path,
+    stems: ast.stems,
     total_duration_ms: currentTimestampMs,
     events: events,
   };

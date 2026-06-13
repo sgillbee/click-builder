@@ -12,7 +12,7 @@ const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 interface AudioMixOptions {
   normalizationDb?: number;
   limiter?: number;
-  stemRouting?: Partial<Record<"click" | "cue" | "room", "stereo" | "left" | "right" | "band-only">>;
+  stemRouting?: Partial<Record<"click" | "cue" | "room", { left: number; right: number }>>;
 }
 
 interface ClickProfile {
@@ -205,16 +205,29 @@ function resolveEventAssetPath(assetName: string, stem: "click" | "cue" | "room"
   throw new Error("[audio-renderer] No fallback cue asset found in project or installed package assets.");
 }
 
-function buildStemPanFilter(route: "stereo" | "left" | "right" | "band-only"): string | null {
-  if (route === "stereo") {
+function buildStemPanFilter(route: { left: number; right: number } | undefined): string | null {
+  if (!route || (route.left === 100 && route.right === 100)) {
     return null;
   }
 
-  if (route === "left") {
-    return "pan=stereo|c0=c0|c1=0*c0";
+  const leftWeight = (route.left / 100).toFixed(6);
+  const rightWeight = (route.right / 100).toFixed(6);
+  return `pan=stereo|c0=${leftWeight}*c0|c1=${rightWeight}*c0`;
+}
+
+function buildStemRoutingMap(timeline: TimelineJson): Partial<Record<"click" | "cue" | "room", { left: number; right: number }>> {
+  const routing: Partial<Record<"click" | "cue" | "room", { left: number; right: number }>> = {};
+
+  for (const stem of timeline.stems ?? []) {
+    if (stem.source.type === "generated") {
+      routing[stem.source.generated_stem] = {
+        left: stem.routing.left,
+        right: stem.routing.right,
+      };
+    }
   }
 
-  return "pan=stereo|c0=0*c0|c1=c0";
+  return routing;
 }
 
 export async function renderAudio(timeline: TimelineJson): Promise<string> {
@@ -233,7 +246,7 @@ export function buildRenderArgs(timeline: TimelineJson, outputPath: string, opti
   const durationSeconds = Math.max(0.1, timeline.total_duration_ms / 1000 + 0.25);
   const normalizationDb = options.normalizationDb ?? -3;
   const limiter = options.limiter ?? 0.95;
-  const stemRouting = options.stemRouting ?? {};
+  const stemRouting = options.stemRouting ?? buildStemRoutingMap(timeline);
 
   console.error(`[audio-renderer] Rendering ${timeline.events.length} events with ffmpeg...`);
   console.error(`[audio-renderer] Target path: ${outputPath}`);
@@ -299,7 +312,7 @@ export function buildRenderArgs(timeline: TimelineJson, outputPath: string, opti
   });
 
   timeline.events.forEach((event, index) => {
-    const route = stemRouting[event.stem] ?? "stereo";
+    const route = stemRouting[event.stem];
     const panFilter = buildStemPanFilter(route);
     const sourceLabel = eventSourceLabels[index];
     if (!sourceLabel) {

@@ -7,6 +7,8 @@ export const MuxerInputSchema = z.object({
   first_click_timestamp_ms: z.number().optional(),
   // Signed alignment delta in ms. Positive delays video; negative delays audio.
   effective_signed_delta_ms: z.number().optional(),
+  // Allows positive-delay outputs to fall back to a re-encoded stitch when lossless prepend is unsafe.
+  allow_reencode_positive_delay: z.boolean().optional(),
   generated_audio_path: z.string(),
   original_video_path: z.string(),
   output_video_path: z.string(),

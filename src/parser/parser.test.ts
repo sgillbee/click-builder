@@ -124,4 +124,87 @@ structure:
     expect(ast.timeline_commands[0]?.section_markers_enabled).toBe(false);
     expect(ast.timeline_commands[1]?.section_markers_enabled).toBe(true);
   });
+
+  it("normalizes stem declarations and project video paths", () => {
+    const yamlContent = `
+name: "Stem Project"
+tempo: 90
+time_signature: 4/4
+video_downbeat_offset_ms: 100
+input_video_path: "project/input.mp4"
+output_video_path: "project/output.mp4"
+stems:
+  - id: "click-stem"
+    source:
+      type: "generated"
+      generated_stem: "click"
+  - id: "cue-stem"
+    source:
+      type: "generated"
+      generated_stem: "cue"
+    routing:
+      left_percent: 0
+  - id: "source-stem"
+    source:
+      type: "source-video-audio"
+    routing:
+      right_percent: 25
+structure:
+  - section: "Click"
+    measures: 1
+  - section: "Verse 1"
+    measures: 1
+`;
+
+    const ast = parseConfigToAst(yamlContent);
+
+    expect(ast.input_video_path).toBe("project/input.mp4");
+    expect(ast.output_video_path).toBe("project/output.mp4");
+    expect(ast.timeline_commands[0]?.section_designator).toBe("click");
+    expect(ast.stems).toEqual([
+      {
+        id: "click-stem",
+        source: { type: "generated", generated_stem: "click" },
+        routing: { left: 100, right: 100 },
+      },
+      {
+        id: "cue-stem",
+        source: { type: "generated", generated_stem: "cue" },
+        routing: { left: 0, right: 100 },
+      },
+      {
+        id: "source-stem",
+        source: { type: "source-video-audio" },
+        routing: { left: 100, right: 25 },
+      },
+    ]);
+  });
+
+  it("rejects invalid meter formatting", () => {
+    const yamlContent = `
+name: "Bad Meter"
+tempo: 90
+time_signature: 4-4
+video_downbeat_offset_ms: 100
+structure:
+  - section: "Intro"
+    measures: 1
+`;
+
+    expect(() => parseConfigToAst(yamlContent)).toThrow("Invalid time signature format: 4-4");
+  });
+
+  it("rejects invalid meter numbers", () => {
+    const yamlContent = `
+name: "Bad Meter Numbers"
+tempo: 90
+time_signature: x/4
+video_downbeat_offset_ms: 100
+structure:
+  - section: "Intro"
+    measures: 1
+`;
+
+    expect(() => parseConfigToAst(yamlContent)).toThrow("Invalid time signature numbers: x/4");
+  });
 });

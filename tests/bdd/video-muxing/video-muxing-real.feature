@@ -19,10 +19,22 @@ Feature: Real video mux sync validation
     When real muxing is executed for the scenario
     Then ffprobe stream start timings align with the signed delta expectation
 
-  Scenario: Leader-aware click intro yields D > 0 and delays video
+  Scenario: Leader-aware click intro falls back to re-encode when lossless prepend is unsafe
     Given leader-aware real mux config with a click intro and 400ms video downbeat offset
-    When leader-aware real pipeline muxing is executed
+    When leader-aware real pipeline muxing is executed with re-encode fallback enabled
     Then ffprobe stream start timings align with leader-aware effective delta
+
+  Scenario: Short generated audio does not truncate the source video tail
+    Given video sync scenario fixture "d0"
+    When real muxing is executed with a 0.5 second generated audio program
+    Then output duration matches the source video duration
+    Then no audio truncation warning is emitted
+
+  Scenario: Overlong generated audio is trimmed at source video end
+    Given video sync scenario fixture "d0"
+    When real muxing is executed with a 12 second generated audio program
+    Then output duration matches the source video duration
+    Then an audio truncation warning is emitted
 
   Scenario: Complex 6/8 click cues preserve the longer beat grid through mux
     Given video sync scenario fixture "complex-6-8"

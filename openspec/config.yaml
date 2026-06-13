@@ -1,5 +1,13 @@
 schema: spec-driven
 
+context: |
+	This repo requires a green verification gate before an OpenSpec change can be considered complete.
+
+rules:
+	tasks:
+		- Require `npm run build`, `npm run test`, and `npm run test:bdd` to pass before marking a change as complete.
+		- Require `npm run test:coverage` to remain above 80% before marking a change as complete.
+
 # Project context (optional)
 # This is shown to AI when creating artifacts.
 # Add your tech stack, conventions, style guides, domain knowledge, etc.

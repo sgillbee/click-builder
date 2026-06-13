@@ -1,34 +1,157 @@
-# Click track video builder prd
-Click track video builder is an application that allows converts existing lyric videos (for church VBS for example) into click-track videos that the music can be played live, but the band is synced with the lyrics animated in the video.
+# Click Track Builder PRD
 
-The video is pre-existing. We need to create the click track audio and then combine it with the existing video to create a new video with the click track audio. The click track audio will be used by the band to play along with the video, which will have the lyrics animated in sync with the music.
+## 1. Product Summary
 
-This is intended to be a CLI application that can be run on a local machine. It will take in the existing video file, the tempo/time-signature, the song structure, and the wav fragments for the click/metronome sounds and counting/section markers. It will then output a new video file with the click track audio combined with the existing video.
+Click Track Builder transforms an existing video into a click-enabled performance video by generating timeline-driven audio stems (currently click and cues), then muxing them with the source video while preserving sync.
 
-* **Architecture (Unix Philosophy):** The application MUST be built as a suite of small, composable CLI tools rather than a massive monolith. Output from one phase feeds as input into the next (e.g., config parser -> timeline generator -> audio renderer -> video muxer).
-  * This allows mixing stacks (e.g., Node.js for orchestration and parsing, Python for audio analysis) so long as they communicate via standard formats (like JSON stdout/stdin).
-* **Detailed Logging:** Every phase and tool must emit detailed, diagnostic logs to cleanly track data transformations and troubleshoot math or FFmpeg issues.
-* **Tech Stack:** Open to a hybrid Node.js (TypeScript) and/or Python approach. Pick the best ecosystem for each specific micro-tool in the pipeline.
-* **Build/Tooling:** Modern tooling (Vite/Rspack ecosystem for TS, standard requirements for Python).
-* **Testing [CRITICAL]:** Unit testing per tool. Crucially, a BDD/GWT (Given/When/Then) test runner (like Cucumber or Playwright's test runner adapted for integration) MUST be used to enforce requirements and validate the end-to-end integration of the pipeline.
-* **Media Processing:** FFmpeg (via a wrapper like `fluent-ffmpeg` or spawned processes) for all media multiplexing and audio timeline generation.
+The tool is a local CLI pipeline with deterministic behavior intended for repeatable, Git-managed song configurations.
 
-Here are some details:
+## 2. Goals
 
-* I have information about the musical tempo/time-signature (eg: 139 6/8 or 72 4/4).
-* I know how long the song is (how may measures).
-* I know song structure (intro, verse, chorus, bridge, interlude, outro, etc). The structure configuration MUST support mid-song meter changes (e.g., jumping from 4/4 to a measure of 2/4, then back to 4/4) so the click track doesn't drift if there's a time-signature anomaly.
-* I have wav fragments (from Ableton Live) for different click/metronome sounds. I also have wav fragments for counting ("one", "two", "three", etc) and also for sections ("chorus", "verse one", "bridge two", etc).
-* It is optional, but nice to have, to have these section markers in the click track. I'm happy with just a count-in and metronome. Typically, click tracks start with a measure of metronome clicks then over the top of the next measure is a count-in "Intro two three four".
-* Metronome should be click should be on quarter notes for 4/4. For 6/8 is could be in 6, in 4, or in 2 depending on the song. This should be a user input. Some kind of metronome audio preview would be nice.
-* I'm happy for this to be a multi-step process. For example, the first step could be to generate the click track audio file based on the tempo, time signature, song structure, and wav fragments. The second step could be to combine the click track audio with the existing video to create the final output video.
-* The output video should NOT reencode the existing video. It should just combine the existing video with the new click track audio. This is important to preserve the quality of the original video and to make the process faster.
-* The application should be able to handle different video formats (mp4, mov, etc) and audio formats (wav, mp3, etc) for the input files.
-* The application should be able to output the final video in a common format (mp4, mov, etc) that can be easily played on different devices.
-* The application should have error handling for cases where the input files are not in the correct format or if there are issues with the audio or video processing.
-* The application should have a simple command-line interface directly driven by a configuration file (YAML preferred). This allows configs to be easily stored in git, iterated upon, and used for batch continuous creation. The YAML config will define paths, base tempo/time-signature, and detailed song structure.
-* The application should be well-documented, with clear instructions on how to use it and what the expected input and output formats are.
-* **Video Sync Offset & Downbeat Alignment:** Because we add measures of click/count-in to the front, the existing video must be shifted dynamically to align the audio count-in with the actual start of the music in the video.
-  * For the MVP, we will rely on a **manual downbeat timecode** provided by the user in the YAML config (e.g., the exact millisecond the song actually starts in the video).
-  * We will use an input timestamp offset (e.g., FFmpeg `-itsoffset`) to prevent re-encoding, offsetting the video stream relative to the calculated audio wait time.
-  * The architecture MUST be designed modularly here. If automatic MIR (Music Information Retrieval) downbeat detection is added in the future, it just becomes a new tool in the pipeline that injects the timecode.
+- Produce reliable click/cue aligned videos from structured YAML song definitions.
+- Keep video and generated audio in precise sync using leader-aware math.
+- Preserve source video quality by avoiding unnecessary re-encode paths.
+- Support long-form scenarios (including complex 6/8 arrangements) with regression-safe validation.
+- Evolve from simple click generation into a project-level mux configuration format.
+
+## 3. Current Implementation Snapshot
+
+### 3.1 Architecture
+
+The implementation is a composable TypeScript CLI pipeline:
+
+- config parser: YAML to AST
+- timeline generator: AST to absolute timestamp events
+- audio renderer: events to generated WAV mix via ffmpeg
+- video muxer: generated audio + original video to output video
+- orchestration CLI: runs full flow end to end
+
+### 3.2 Implemented Behavior
+
+- YAML supports tempo, time signature, structure, optional section-level overrides, and downbeat sync offset.
+- Mid-song meter/tempo overrides are supported per section.
+- Timeline uses absolute timestamp math with float millisecond precision.
+- Click intro handling is leader-aware and contributes to effective mux delta calculation.
+- Muxer supports signed alignment deltas (positive, zero, negative) and strategy-based ffmpeg invocation.
+- Real mux BDD suite validates D=0, D>0, D<0, plus complex long-form 6/8 behavior.
+- Fixture generator and manifest support deterministic real-mux scenario coverage.
+
+### 3.3 Current CLI Contract
+
+Current top-level command:
+
+- click-builder [--allow-reencode] <config.yaml> <input-video> <output-video>
+
+Current path ownership:
+
+- YAML owns musical structure and sync offset values.
+- CLI positional args own input video and output video paths.
+
+## 4. Core Product Requirements (Current)
+
+### 4.1 Config-Driven Song Definition
+
+- YAML is the source of truth for musical timeline shape.
+- Required baseline fields include name, tempo, time_signature, structure, and video_downbeat_offset_ms (or legacy alias).
+
+### 4.2 Deterministic Timeline and Rendering
+
+- Event timestamps must be absolute and deterministic.
+- Events must carry stem identity and asset identity.
+- Rendering must be reproducible for a fixed input config and asset set.
+
+### 4.3 Video Sync and Muxing
+
+- Effective sync delta must account for click leader duration.
+- Mux behavior must remain explicit and debuggable via diagnostic logging.
+- Positive-delay unsafe prepend behavior must fail unless explicit fallback is enabled.
+
+### 4.4 Testing and Validation
+
+- Unit tests per module.
+- BDD real-mux tests are required for sync correctness and regression protection.
+
+## 5. New Requirements: Stem Routing and Project Configuration
+
+This section captures the agreed next requirements.
+
+### 5.1 Routing Model Scope
+
+- The system MUST model routing in neutral stem terms.
+- It MUST NOT encode assumptions about playback environments (for example stage/ears/room semantics).
+- Click and cue are stems.
+- Full program audio extracted from source video is a stem.
+- Future isolated stems are expected but not required for initial release.
+
+### 5.2 YAML Stem Routing Section
+
+Add a new YAML stems section where each stem can define source and routing.
+
+Initial intent:
+
+- Support generated stems (click, cue).
+- Support source-video derived stem (instrumental_full) as a fully mixed stem.
+- Keep schema extensible for future file-based or isolated stem sources.
+
+### 5.3 Left/Right Routing Scale
+
+- Routing values MUST be human-friendly integers from 0 to 100.
+- Routing percentages represent contribution to left and right channels.
+- Unspecified routing MUST default to left=100 and right=100.
+
+Examples:
+
+- click right-only: left=0, right=100
+- instrumental left-only: left=100, right=0
+- dual-channel stem: left=100, right=100
+
+### 5.4 Empty Routing Is Allowed
+
+- If no stem is routed to output, the system MAY produce silence.
+- This is valid behavior and MUST NOT be treated as a schema error.
+
+### 5.5 Source Resolution Failures
+
+- Missing or invalid stem sources MUST fail loudly with clear diagnostics.
+- Error output must identify the failing stem and failing source.
+
+### 5.6 Deterministic Mix Ordering
+
+- Mix application order MUST be deterministic.
+- YAML declaration order should be preserved to keep runs reproducible.
+
+### 5.7 Path Precedence for Project-Style Config
+
+When input/output video paths exist in both CLI args and YAML, precedence is:
+
+- CLI
+- YAML
+- error (if neither provides required path)
+
+This enables a self-contained project file while preserving scriptable overrides.
+
+## 6. Product Direction
+
+### 6.1 Near-Term
+
+- Introduce YAML stem routing for generated click/cue and source-video audio stem.
+- Preserve backward compatibility through routing defaults (100/100).
+- Add contract and BDD coverage for routing and precedence behavior.
+
+### 6.2 Future
+
+- Optional isolated stem sources (bgv, perc, pads, keys, guitars, and others).
+- Optional advanced pan-law or gain staging features.
+- Optional auto-detection tooling for downbeat sync (separate pipeline stage).
+
+## 7. Non-Goals for Immediate Scope
+
+- Tool-level assumptions about downstream A/V hardware or playback topology.
+- Mandatory non-silent output.
+- Full stem mixer workstation features.
+
+## 8. Quality Bar
+
+- Every requirement added in section 5 must be enforced by automated tests.
+- BDD scenarios should include both happy paths and failure diagnostics.
+- Real mux validations should continue to prove long-form sync integrity.

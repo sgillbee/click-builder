@@ -57,6 +57,57 @@ describe("generateTimeline", () => {
     expect(timeline.total_duration_ms).toBeCloseTo(1500, 8);
   });
 
+  it("supports 6/8 in-6 subdivision mode", () => {
+    const ast: AstJson = {
+      project_name: "Subdivision In-6",
+      video_downbeat_offset_ms: 0,
+      timeline_commands: [
+        {
+          type: "section",
+          name: "Verse",
+          measures: 1,
+          bpm: 120,
+          meter: [6, 8],
+          metronome_mode: "in-6",
+          section_markers_enabled: false,
+        },
+      ],
+    };
+
+    const timeline = generateTimeline(ast);
+    const clicks = timeline.events.filter((event) => event.stem === "click");
+
+    expect(clicks).toHaveLength(6);
+    expect(clicks[0]?.timestamp_ms).toBeCloseTo(0, 8);
+    expect(clicks[5]?.timestamp_ms).toBeCloseTo(1250, 8);
+    expect(timeline.total_duration_ms).toBeCloseTo(1500, 8);
+  });
+
+  it("supports 6/8 in-4 subdivision mode", () => {
+    const ast: AstJson = {
+      project_name: "Subdivision In-4",
+      video_downbeat_offset_ms: 0,
+      timeline_commands: [
+        {
+          type: "section",
+          name: "Verse",
+          measures: 1,
+          bpm: 120,
+          meter: [6, 8],
+          metronome_mode: "in-4",
+          section_markers_enabled: false,
+        },
+      ],
+    };
+
+    const timeline = generateTimeline(ast);
+    const clicks = timeline.events.filter((event) => event.stem === "click");
+
+    expect(clicks).toHaveLength(4);
+    expect(clicks[1]?.timestamp_ms).toBeCloseTo(375, 8);
+    expect(clicks[3]?.timestamp_ms).toBeCloseTo(1125, 8);
+  });
+
   it("omits section cue events when markers are disabled", () => {
     const ast: AstJson = {
       project_name: "No Markers",
@@ -102,6 +153,30 @@ describe("generateTimeline", () => {
     // Measure 1 = 4 beats, measure 2 = 1 beat.
     expect(clicks).toHaveLength(5);
     expect(timeline.total_duration_ms).toBeCloseTo(2500, 8);
+  });
+
+  it("preserves the full pulse count when the final measure is complete", () => {
+    const ast: AstJson = {
+      project_name: "Full Final Measure",
+      video_downbeat_offset_ms: 0,
+      timeline_commands: [
+        {
+          type: "section",
+          name: "Outro",
+          measures: 1,
+          final_measure_beats: 4,
+          bpm: 120,
+          meter: [4, 4],
+          section_markers_enabled: false,
+        },
+      ],
+    };
+
+    const timeline = generateTimeline(ast);
+    const clicks = timeline.events.filter((event) => event.stem === "click");
+
+    expect(clicks).toHaveLength(4);
+    expect(timeline.total_duration_ms).toBeCloseTo(2000, 8);
   });
 
   it("emits section cues one measure before subsequent section downbeats", () => {
