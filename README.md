@@ -1,129 +1,278 @@
 # Click Builder
 
-CLI tooling for turning an existing lyric video into a click-track video workflow. The project is built as a set of small composable tools that pass structured data between phases, with FFmpeg handling the media work.
+Build click-track videos from a YAML song definition and a source lyric video.
+
+`click-builder` parses a project file, generates beat-accurate click and cue audio, then muxes that audio back into the source video with FFmpeg.
 
 ## What It Does
 
-- Parse a YAML song configuration into a validated AST
+- Parse a YAML project file into a validated AST
 - Generate a beat-accurate timeline from tempo, meter, and structure
-- Render layered click/cue audio from source fragments
-- Mux the generated audio back into the original video without re-encoding the video stream
+- Render click and cue stems into a mixed WAV file
+- Mux the generated audio back into the source video
+- Support self-contained project files with input and output video paths in YAML
 
-## Requirements
+## Quick Start
 
-- Node.js 20+
-- FFmpeg installed and available on `PATH`
-- On Windows, install FFmpeg with `winget install Gyan.FFmpeg`
-- A project YAML config file
+### Prerequisites
 
-## Install
+You need:
+
+- Node.js 20 or newer
+- `ffmpeg` and `ffprobe` available on your `PATH`
+
+### Install Node.js
+
+If you do not already have Node.js installed, install the current LTS release.
+
+#### Windows
 
 ```bash
-npm install
+winget install OpenJS.NodeJS.LTS
 ```
 
-## Global CLI Install
-
-Install globally from this repository so the `click-builder` command is available on your `PATH`:
+#### macOS
 
 ```bash
-npm install -g .
+brew install node
+```
+
+#### Ubuntu / Debian
+
+```bash
+sudo apt update
+sudo apt install nodejs npm
+```
+
+### Install FFmpeg
+
+#### Windows
+
+```bash
+winget install Gyan.FFmpeg
+```
+
+#### macOS
+
+```bash
+brew install ffmpeg
+```
+
+#### Ubuntu / Debian
+
+```bash
+sudo apt update
+sudo apt install ffmpeg
+```
+
+### Verify Your Install
+
+```bash
+node --version
+npm --version
+ffmpeg -version
+ffprobe -version
+```
+
+If all four commands succeed, you are ready to run `click-builder`.
+
+### Run Without Installing Globally
+
+The easiest way to try it is with `npx`:
+
+```bash
+npx @popscode/click-builder ./project.yaml
+```
+
+If your YAML includes `input_video_path` and `output_video_path`, that is enough.
+
+### Install Globally
+
+If you use `click-builder` regularly, install it globally:
+
+```bash
+npm install -g @popscode/click-builder
 ```
 
 Then run:
 
 ```bash
-click-builder <config.yaml> <input-video> <output-video>
+click-builder ./project.yaml
 ```
 
-## Scripts
+### Run From This Repository
+
+If you are using the source checkout directly:
+
+```bash
+npm install
+npm run build
+npm install -g .
+click-builder ./project.yaml
+```
+
+## Example Project File
+
+The recommended format is a self-contained YAML project file with video paths and explicit stems.
+
+```yaml
+name: "My Song"
+tempo: 137
+time_signature: 4/4
+video_downbeat_offset_ms: 400
+click_profile: assets/click-profiles/PraiseCharts.config.yml
+
+input_video_path: ./My Song - Lyric Video - Instrumental.mp4
+output_video_path: ./My Song - Lyric Video - Click.mp4
+
+count_in_enabled: true
+section_markers_enabled: true
+downbeat_emphasis_enabled: true
+mid_beat_filler_enabled: false
+
+stems:
+  - id: instrumental_full
+    source:
+      type: source-video-audio
+    routing:
+      left_percent: 100
+      right_percent: 100
+
+  - id: click
+    source:
+      type: generated
+      generated_stem: click
+    routing:
+      left_percent: 100
+      right_percent: 100
+
+  - id: cue
+    source:
+      type: generated
+      generated_stem: cue
+    routing:
+      left_percent: 100
+      right_percent: 100
+
+structure:
+  - section: "Click"
+    measures: 2
+  - section: "Intro"
+    measures: 2
+  - section: "Verse 1"
+    measures: 8
+  - section: "Chorus"
+    measures: 8
+  - section: "Outro"
+    measures: 4
+```
+
+## CLI Usage
+
+```bash
+click-builder [--allow-reencode] <config.yaml> [input-video] [output-video]
+```
+
+Path precedence is:
+
+1. CLI arguments
+2. YAML `input_video_path` and `output_video_path`
+3. error if neither provides the required path
+
+In most cases, the recommended approach is to keep paths in the YAML so the project file is self-contained.
+
+## Troubleshooting
+
+### `ffmpeg` not found
+
+Install FFmpeg and make sure `ffmpeg` is on your `PATH`.
+
+### `ffprobe` not found
+
+Install FFmpeg and make sure `ffprobe` is on your `PATH`.
+
+### Node version too old
+
+Upgrade to Node.js 20 or newer.
+
+### Command not found after global install
+
+Make sure npm global binaries are on your shell `PATH`, or run with `npx` instead.
+
+## Optional: Use fnm
+
+If you prefer a Node version manager, `fnm` is a good lightweight option.
+
+### Windows
+
+```bash
+winget install Schniz.fnm
+fnm install --lts
+fnm use lts-latest
+```
+
+### macOS
+
+```bash
+brew install fnm
+fnm install --lts
+fnm use lts-latest
+```
+
+Then verify:
+
+```bash
+node --version
+npm --version
+```
+
+## Development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Build:
+
+```bash
+npm run build
+```
+
+Run the main test suites:
 
 ```bash
 npm run test
 npm run test:coverage
 npm run test:bdd
-npm run fixtures:video-sync
-npm run test:bdd:real
-npm run test:bdd:real:muxsync
 ```
 
-## Tests
-
-- Unit tests live next to the source they exercise as `*.test.ts` files.
-- BDD tests live under `tests/bdd/<feature>/` as `.feature` files with matching step definitions.
-- Coverage is available via `npm run test:coverage`.
-- Real mux sync fixtures are generated with `npm run fixtures:video-sync` into `tests/fixtures/video-sync/`.
-- Targeted real mux sync checks run with `npm run test:bdd:real:muxsync`.
-- For real/mock selection, pass npm flags directly, e.g. `npm run test:bdd --real --muxsync`.
-- For ad-hoc BDD selection, pass cucumber args through `npm run test:bdd:run -- ...`.
-
-Example:
-
-```bash
-npm run test:bdd --real --muxsync
-
-npm run test:bdd:run -- --tags "@real and @muxsync and not @pending" --format html:test-artifacts/bdd/real/custom-report.html
-```
-
-## Real Mux Sync Workflow
-
-1. Regenerate deterministic video fixtures:
+Generate deterministic real-mux fixtures:
 
 ```bash
 npm run fixtures:video-sync
 ```
 
-2. Run focused real mux sync scenarios (`D = 0`, `D > 0`, `D < 0`):
+Unit tests live next to the source they exercise as `*.test.ts` files.
 
-```bash
-npm run test:bdd:real:muxsync
-```
-
-3. Run mux-sync scenarios and inspect captured muxed outputs:
-
-```bash
-npm run test:bdd --real --muxsync
-```
-
-Muxed output artifacts are always written under `test-artifacts/bdd/real/mux-sync/muxed-output/`.
-
-BDD HTML reports are written under `test-artifacts/bdd/`.
+BDD tests live under `tests/bdd/` as `.feature` files with matching step definitions.
 
 ## Project Structure
 
 - `docs/` - product and planning documentation
-- `openspec/` - proposal, design, specs, and implementation tasks
+- `openspec/` - proposal, design, specs, and archived changes
 - `src/` - CLI pipeline source code
-- `.github/skills/` - Copilot skills used for implementation and quality workflows
-
-## Configuration
-
-The pipeline is driven by YAML. A config should define the song name, tempo, base time signature, downbeat offset, and song structure.
-
-Example:
-
-```yaml
-name: "Great Are You Lord"
-tempo: 72
-time_signature: 6/8
-video_downbeat_offset_ms: 4230
-structure:
-  - section: "Count-in"
-    measures: 1
-  - section: "Verse 1"
-    measures: 8
-  - section: "Bridge"
-    measures: 4
-    time_signature: 4/4
-```
+- `assets/` - click profiles and runtime assets
+- `tests/` - BDD coverage and fixtures
 
 ## Notes
 
-- Time values are stored as floating-point millisecond values in the internal JSON contracts.
-- The metronome click is the foundation layer; cues are mixed on top.
-- The current implementation is scaffolded to support a Unix-style pipeline of small tools.
+- Internal timing values are stored as floating-point millisecond values.
+- The generated click stem is the timing foundation for leader-aware muxing.
+- Existing YAML files without `stems` still work, but new project files should prefer the explicit stem-routing format.
 
 ## Documentation
 
 - [PRD](docs/click-track-builder-prd.md)
-- [OpenSpec change](openspec/changes/init-click-track-builder/proposal.md)
+- [Release Process](docs/release.md)
