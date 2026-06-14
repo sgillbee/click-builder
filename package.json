@@ -1,7 +1,8 @@
 {
   "name": "@popscode/click-builder",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Build click-track lyric videos from YAML song definitions and source video.",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=20"
