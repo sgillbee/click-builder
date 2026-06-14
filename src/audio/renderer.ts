@@ -54,6 +54,12 @@ function runFfmpeg(args: string[]): Promise<void> {
   });
 }
 
+function writeTempFilterGraph(filterGraph: string): string {
+  const filterPath = path.join(os.tmpdir(), `click_track_filter_${Date.now()}_${Math.random().toString(16).slice(2)}.txt`);
+  fs.writeFileSync(filterPath, filterGraph, "utf-8");
+  return filterPath;
+}
+
 function loadClickProfile(profilePath?: string): LoadedClickProfile {
   const profileRelativePath = profilePath ?? DEFAULT_CLICK_PROFILE_PATH;
   const profileCandidates = path.isAbsolute(profileRelativePath)
@@ -233,8 +239,27 @@ function buildStemRoutingMap(timeline: TimelineJson): Partial<Record<"click" | "
 export async function renderAudio(timeline: TimelineJson): Promise<string> {
   const outputPath = path.join(os.tmpdir(), `click_track_${Date.now()}.wav`);
   const args = buildRenderArgs(timeline, outputPath);
+  const filterGraphIndex = args.indexOf("-filter_complex");
+  let filterGraphPath: string | undefined;
 
-  await runFfmpeg(args);
+  if (filterGraphIndex > -1) {
+    const filterGraph = args[filterGraphIndex + 1];
+    if (filterGraph === undefined) {
+      throw new Error("[audio-renderer] Missing filter graph content for ffmpeg invocation.");
+    }
+
+    filterGraphPath = writeTempFilterGraph(filterGraph);
+    args.splice(filterGraphIndex, 2, "-filter_complex_script", filterGraphPath);
+  }
+
+  try {
+    await runFfmpeg(args);
+  } finally {
+    if (filterGraphPath && fs.existsSync(filterGraphPath)) {
+      fs.unlinkSync(filterGraphPath);
+    }
+  }
+
   return outputPath;
 }
 
