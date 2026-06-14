@@ -52,7 +52,7 @@ Current path ownership:
 ### 4.1 Config-Driven Song Definition
 
 - YAML is the source of truth for musical timeline shape.
-- Required baseline fields include name, tempo, time_signature, structure, and video_downbeat_offset_ms (or legacy alias).
+- Required baseline fields include name, tempo, time_signature, structure, and video_downbeat_offset_ms.
 
 ### 4.2 Deterministic Timeline and Rendering
 

@@ -58,7 +58,7 @@ export function parseConfigToAst(yamlContent: string): AstJson {
   const baseMeter = parseMeter(config.time_signature);
   const baseTempo = config.tempo;
   const baseCountInEnabled = config.count_in_enabled ?? true;
-  const baseMetronomeMode = config.metronome_mode;
+  const baseDivisions = config.divisions;
   const baseSectionMarkersEnabled = config.section_markers_enabled ?? true;
   const baseDownbeatEmphasisEnabled = config.downbeat_emphasis_enabled ?? true;
   const baseMidBeatFillerEnabled = config.mid_beat_filler_enabled ?? false;
@@ -71,9 +71,9 @@ export function parseConfigToAst(yamlContent: string): AstJson {
   const commands = config.structure.map((section) => {
     const meter = section.time_signature ? parseMeter(section.time_signature) : baseMeter;
     const bpm = section.tempo ? section.tempo : baseTempo;
+    const divisions = section.divisions ?? baseDivisions;
     const sectionDesignator = section.section_designator ?? (isClickSectionName(section.section) ? "click" : "song");
     const countInEnabled = section.count_in_enabled ?? baseCountInEnabled;
-    const metronomeMode = section.metronome_mode ? section.metronome_mode : baseMetronomeMode;
     const sectionMarkersEnabled = section.section_markers_enabled ?? (sectionDesignator === "click" ? false : baseSectionMarkersEnabled);
     const downbeatEmphasisEnabled = section.downbeat_emphasis_enabled ?? baseDownbeatEmphasisEnabled;
     const midBeatFillerEnabled = section.mid_beat_filler_enabled ?? baseMidBeatFillerEnabled;
@@ -90,7 +90,7 @@ export function parseConfigToAst(yamlContent: string): AstJson {
       meter: meter,
       section_designator: sectionDesignator,
       count_in_enabled: countInEnabled,
-      metronome_mode: metronomeMode,
+      divisions: divisions,
       section_markers_enabled: sectionMarkersEnabled,
       downbeat_emphasis_enabled: downbeatEmphasisEnabled,
       mid_beat_filler_enabled: midBeatFillerEnabled,

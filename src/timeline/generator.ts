@@ -26,16 +26,7 @@ export function generateTimeline(ast: AstJson): TimelineJson {
       const beatDurationMs = quarterNoteDurationMs * (4 / beatType);
       const measureDurationMs = beatsPerMeasure * beatDurationMs;
 
-      let pulsesPerMeasure = beatsPerMeasure;
-      if (cmd.meter[0] === 6 && cmd.meter[1] === 8 && cmd.metronome_mode) {
-        if (cmd.metronome_mode === "in-6") {
-          pulsesPerMeasure = 6;
-        } else if (cmd.metronome_mode === "in-4") {
-          pulsesPerMeasure = 4;
-        } else {
-          pulsesPerMeasure = 2;
-        }
-      }
+      const pulsesPerMeasure = cmd.divisions ?? beatsPerMeasure;
 
       const pulseIntervalMs = measureDurationMs / pulsesPerMeasure;
       const sectionDesignator = cmd.section_designator ?? "song";

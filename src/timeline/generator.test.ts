@@ -32,7 +32,7 @@ describe("generateTimeline", () => {
     expect(timeline.events).toHaveLength(7);
   });
 
-  it("supports 6/8 subdivision modes without changing section duration", () => {
+  it("supports explicit divisions without changing section duration", () => {
     const ast: AstJson = {
       project_name: "Subdivision Test",
       video_downbeat_offset_ms: 0,
@@ -43,7 +43,7 @@ describe("generateTimeline", () => {
           measures: 1,
           bpm: 120,
           meter: [6, 8],
-          metronome_mode: "in-2",
+          divisions: 2,
         },
       ],
     };
@@ -57,9 +57,9 @@ describe("generateTimeline", () => {
     expect(timeline.total_duration_ms).toBeCloseTo(1500, 8);
   });
 
-  it("supports 6/8 in-6 subdivision mode", () => {
+  it("supports 4/4 with divisions of 2 (beats 1 and 3)", () => {
     const ast: AstJson = {
-      project_name: "Subdivision In-6",
+      project_name: "Subdivision 4/4 in 2",
       video_downbeat_offset_ms: 0,
       timeline_commands: [
         {
@@ -67,8 +67,8 @@ describe("generateTimeline", () => {
           name: "Verse",
           measures: 1,
           bpm: 120,
-          meter: [6, 8],
-          metronome_mode: "in-6",
+          meter: [4, 4],
+          divisions: 2,
           section_markers_enabled: false,
         },
       ],
@@ -77,15 +77,15 @@ describe("generateTimeline", () => {
     const timeline = generateTimeline(ast);
     const clicks = timeline.events.filter((event) => event.stem === "click");
 
-    expect(clicks).toHaveLength(6);
+    expect(clicks).toHaveLength(2);
     expect(clicks[0]?.timestamp_ms).toBeCloseTo(0, 8);
-    expect(clicks[5]?.timestamp_ms).toBeCloseTo(1250, 8);
-    expect(timeline.total_duration_ms).toBeCloseTo(1500, 8);
+    expect(clicks[1]?.timestamp_ms).toBeCloseTo(1000, 8);
+    expect(timeline.total_duration_ms).toBeCloseTo(2000, 8);
   });
 
-  it("supports 6/8 in-4 subdivision mode", () => {
+  it("supports 12/8 with divisions of 4 (beats 1,4,7,10)", () => {
     const ast: AstJson = {
-      project_name: "Subdivision In-4",
+      project_name: "Subdivision 12/8 in 4",
       video_downbeat_offset_ms: 0,
       timeline_commands: [
         {
@@ -93,8 +93,8 @@ describe("generateTimeline", () => {
           name: "Verse",
           measures: 1,
           bpm: 120,
-          meter: [6, 8],
-          metronome_mode: "in-4",
+          meter: [12, 8],
+          divisions: 4,
           section_markers_enabled: false,
         },
       ],
@@ -104,8 +104,11 @@ describe("generateTimeline", () => {
     const clicks = timeline.events.filter((event) => event.stem === "click");
 
     expect(clicks).toHaveLength(4);
-    expect(clicks[1]?.timestamp_ms).toBeCloseTo(375, 8);
-    expect(clicks[3]?.timestamp_ms).toBeCloseTo(1125, 8);
+    expect(clicks[0]?.timestamp_ms).toBeCloseTo(0, 8);
+    expect(clicks[1]?.timestamp_ms).toBeCloseTo(750, 8);
+    expect(clicks[2]?.timestamp_ms).toBeCloseTo(1500, 8);
+    expect(clicks[3]?.timestamp_ms).toBeCloseTo(2250, 8);
+    expect(timeline.total_duration_ms).toBeCloseTo(3000, 8);
   });
 
   it("omits section cue events when markers are disabled", () => {

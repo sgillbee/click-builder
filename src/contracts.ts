@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // Shared Schemas
 export const MeterSchema = z.tuple([z.number(), z.number()]);
-export const MetronomeModeSchema = z.enum(["in-6", "in-4", "in-2"]);
+export const DivisionsSchema = z.number().int().positive();
 export const SectionDesignatorSchema = z.enum(["song", "click"]);
 
 export const StemRoutingSchema = z.object({
@@ -53,7 +53,7 @@ export const SectionConfigSchema = z.object({
   tempo: z.number().optional(),
   section_designator: SectionDesignatorSchema.optional(),
   count_in_enabled: z.boolean().optional(),
-  metronome_mode: MetronomeModeSchema.optional(),
+  divisions: DivisionsSchema.optional(),
   section_markers_enabled: z.boolean().optional(),
   downbeat_emphasis_enabled: z.boolean().optional(),
   mid_beat_filler_enabled: z.boolean().optional(),
@@ -69,7 +69,7 @@ export const YamlConfigSchema = z.object({
   input_video_path: z.string().optional(),
   output_video_path: z.string().optional(),
   count_in_enabled: z.boolean().optional(),
-  metronome_mode: MetronomeModeSchema.optional(),
+  divisions: DivisionsSchema.optional(),
   section_markers_enabled: z.boolean().optional(),
   downbeat_emphasis_enabled: z.boolean().optional(),
   mid_beat_filler_enabled: z.boolean().optional(),
@@ -102,7 +102,7 @@ export const TimelineCommandSchema = z.object({
   meter: MeterSchema,
   section_designator: SectionDesignatorSchema.optional(),
   count_in_enabled: z.boolean().optional(),
-  metronome_mode: MetronomeModeSchema.optional(),
+  divisions: DivisionsSchema.optional(),
   section_markers_enabled: z.boolean().optional(),
   downbeat_emphasis_enabled: z.boolean().optional(),
   mid_beat_filler_enabled: z.boolean().optional(),

@@ -11,14 +11,16 @@ Feature: Tempo, meter, and beat placement
     When the timeline is generated
     Then all subsequent beat timestamps remain aligned to absolute time
 
-  Scenario: 6/8 click subdivision supports in-6, in-4, and in-2 modes
-    Given a song in 6/8 meter
-    When the metronome mode is set to "in-6"
-    Then six click pulses are generated per bar
-    When the metronome mode is set to "in-4"
-    Then four click pulses are generated per bar
-    When the metronome mode is set to "in-2"
+  Scenario: Generic divisions supports multiple meters
+    Given a song in 4/4 meter
+    When divisions are set to 2
     Then two click pulses are generated per bar
+    Given a song in 6/8 meter
+    When divisions are set to 2
+    Then two click pulses are generated per bar
+    Given a song in 12/8 meter
+    When divisions are set to 4
+    Then four click pulses are generated per bar
 
   Scenario: Floating-point millisecond precision is preserved
     Given a section at 139 BPM

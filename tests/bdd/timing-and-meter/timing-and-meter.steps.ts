@@ -8,7 +8,8 @@ interface TimingState {
   yamlContent: string;
   ast?: AstJson;
   timeline?: TimelineJson;
-  metronomeMode?: "in-6" | "in-4" | "in-2";
+  divisions?: number;
+  meter?: string;
   startMeter?: string;
   switchMeter?: string;
   returnMeter?: string;
@@ -19,14 +20,14 @@ const state: Partial<TimingState> = {};
 function buildYaml(overrides: {
   tempo?: number;
   timeSignature?: string;
-  metronomeMode?: "in-6" | "in-4" | "in-2";
+  divisions?: number;
   structure: string;
 }): string {
-  const modeLine = overrides.metronomeMode ? `metronome_mode: ${overrides.metronomeMode}\n` : "";
+  const divisionsLine = overrides.divisions ? `divisions: ${overrides.divisions}\n` : "";
   return `name: "Timing Test Song"
 tempo: ${overrides.tempo ?? 120}
 time_signature: ${overrides.timeSignature ?? "4/4"}
-${modeLine}video_downbeat_offset_ms: 0
+${divisionsLine}video_downbeat_offset_ms: 0
 structure:
 ${overrides.structure}
 `;
@@ -61,11 +62,12 @@ Given(/^returns to (\d+)\/(\d+)$/, (top: string, bottom: string) => {
 });
 
 Given(/^a song in (\d+)\/(\d+) meter$/, (top: string, bottom: string) => {
-  const modeOverride = state.metronomeMode ? { metronomeMode: state.metronomeMode } : {};
+  state.meter = `${top}/${bottom}`;
+  const divisionsOverride = state.divisions ? { divisions: state.divisions } : {};
   state.yamlContent = buildYaml({
     tempo: 120,
-    timeSignature: `${top}/${bottom}`,
-    ...modeOverride,
+    timeSignature: state.meter,
+    ...divisionsOverride,
     structure: `  - section: "Verse"
     measures: 1`,
   });
@@ -80,12 +82,12 @@ Given("a section at 139 BPM", () => {
   });
 });
 
-When("the metronome mode is set to {string}", (mode: "in-6" | "in-4" | "in-2") => {
-  state.metronomeMode = mode;
+When("divisions are set to {int}", (divisions: number) => {
+  state.divisions = divisions;
   state.yamlContent = buildYaml({
     tempo: 120,
-    timeSignature: "6/8",
-    metronomeMode: mode,
+    timeSignature: state.meter ?? "4/4",
+    divisions,
     structure: `  - section: "Verse"
     measures: 1`,
   });

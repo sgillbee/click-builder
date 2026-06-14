@@ -79,4 +79,114 @@ describe("renderAudio", () => {
 
     expect(filter).not.toContain("pan=stereo");
   });
+
+  it("maps ending section cues to the ending profile asset", () => {
+    const timeline: TimelineJson = {
+      video_downbeat_offset_ms: 0,
+      total_duration_ms: 1000,
+      click_profile: "assets/click-profiles/PraiseCharts.config.yml",
+      events: [{ timestamp_ms: 0, stem: "cue", asset: "cue.section:ending" }],
+    };
+
+    const args = buildRenderArgs(timeline, "out.wav");
+    const inputArgs = args.filter((arg) => arg.includes("Ending.wav"));
+
+    expect(inputArgs.length).toBeGreaterThan(0);
+  });
+
+  it("maps turnaround section cues to the turnaround profile asset", () => {
+    const timeline: TimelineJson = {
+      video_downbeat_offset_ms: 0,
+      total_duration_ms: 1000,
+      click_profile: "assets/click-profiles/PraiseCharts.config.yml",
+      events: [{ timestamp_ms: 0, stem: "cue", asset: "cue.section:turnaround" }],
+    };
+
+    const args = buildRenderArgs(timeline, "out.wav");
+    const inputArgs = args.filter((arg) => arg.includes("Turnaround.wav"));
+
+    expect(inputArgs.length).toBeGreaterThan(0);
+  });
+
+  it("maps tag section cues to the tag profile asset", () => {
+    const timeline: TimelineJson = {
+      video_downbeat_offset_ms: 0,
+      total_duration_ms: 1000,
+      click_profile: "assets/click-profiles/PraiseCharts.config.yml",
+      events: [{ timestamp_ms: 0, stem: "cue", asset: "cue.section:tag" }],
+    };
+
+    const args = buildRenderArgs(timeline, "out.wav");
+    const inputArgs = args.filter((arg) => arg.includes("Tag.wav"));
+
+    expect(inputArgs.length).toBeGreaterThan(0);
+  });
+
+  it("maps post chorus section cues to the post chorus profile asset", () => {
+    const timeline: TimelineJson = {
+      video_downbeat_offset_ms: 0,
+      total_duration_ms: 1000,
+      click_profile: "assets/click-profiles/PraiseCharts.config.yml",
+      events: [{ timestamp_ms: 0, stem: "cue", asset: "cue.section:post_chorus" }],
+    };
+
+    const args = buildRenderArgs(timeline, "out.wav");
+    const inputArgs = args.filter((arg) => arg.includes("Post Chorus.wav"));
+
+    expect(inputArgs.length).toBeGreaterThan(0);
+  });
+
+  it("maps refrain section cues to the refrain profile asset", () => {
+    const timeline: TimelineJson = {
+      video_downbeat_offset_ms: 0,
+      total_duration_ms: 1000,
+      click_profile: "assets/click-profiles/PraiseCharts.config.yml",
+      events: [{ timestamp_ms: 0, stem: "cue", asset: "cue.section:refrain" }],
+    };
+
+    const args = buildRenderArgs(timeline, "out.wav");
+    const inputArgs = args.filter((arg) => arg.includes("Refrain.wav"));
+
+    expect(inputArgs.length).toBeGreaterThan(0);
+  });
+
+  it("maps vamp section cues to the vamp profile asset", () => {
+    const timeline: TimelineJson = {
+      video_downbeat_offset_ms: 0,
+      total_duration_ms: 1000,
+      click_profile: "assets/click-profiles/PraiseCharts.config.yml",
+      events: [{ timestamp_ms: 0, stem: "cue", asset: "cue.section:vamp" }],
+    };
+
+    const args = buildRenderArgs(timeline, "out.wav");
+    const inputArgs = args.filter((arg) => arg.includes("Vamp.wav"));
+
+    expect(inputArgs.length).toBeGreaterThan(0);
+  });
+
+  it("fails fast for unmapped section cues when section default is not set", () => {
+    const timeline: TimelineJson = {
+      video_downbeat_offset_ms: 0,
+      total_duration_ms: 1000,
+      click_profile: "assets/click-profiles/PraiseCharts.config.yml",
+      events: [{ timestamp_ms: 0, stem: "cue", asset: "cue.section:made_up_section" }],
+    };
+
+    expect(() => buildRenderArgs(timeline, "out.wav")).toThrow(
+      "Missing mapping for cue.section:made_up_section"
+    );
+  });
+
+  it("fails fast for unmapped count cues when count default is not set", () => {
+    const timeline: TimelineJson = {
+      video_downbeat_offset_ms: 0,
+      total_duration_ms: 1000,
+      click_profile: "assets/click-profiles/PraiseCharts.config.yml",
+      events: [{ timestamp_ms: 0, stem: "cue", asset: "cue.count:99" }],
+    };
+
+    expect(() => buildRenderArgs(timeline, "out.wav")).toThrow(
+      "Missing mapping for cue.count:99"
+    );
+  });
 });

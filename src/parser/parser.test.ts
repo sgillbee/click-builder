@@ -52,25 +52,25 @@ structure:
     expect(() => parseConfigToAst(yamlContent)).toThrow();
   });
 
-  it("supports global and section-level metronome mode overrides", () => {
+  it("supports global and section-level divisions overrides", () => {
     const yamlContent = `
 name: "Subdivision Song"
 tempo: 120
 time_signature: 6/8
-metronome_mode: in-2
+divisions: 2
 video_downbeat_offset_ms: 0
 structure:
   - section: "Verse"
     measures: 1
   - section: "Bridge"
     measures: 1
-    metronome_mode: in-4
+    divisions: 4
 `;
 
     const ast = parseConfigToAst(yamlContent);
 
-    expect(ast.timeline_commands[0]?.metronome_mode).toBe("in-2");
-    expect(ast.timeline_commands[1]?.metronome_mode).toBe("in-4");
+    expect(ast.timeline_commands[0]?.divisions).toBe(2);
+    expect(ast.timeline_commands[1]?.divisions).toBe(4);
   });
 
   it("parses partial final measure beat counts", () => {

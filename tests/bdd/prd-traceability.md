@@ -10,7 +10,7 @@ This document maps PRD expectations to feature workflows.
 
 ## Musical Behavior
 - Mid-song meter shifts -> `tests/bdd/timing-and-meter/timing-and-meter.feature`
-- 6/8 click modes (in-6/in-4/in-2) -> `tests/bdd/timing-and-meter/timing-and-meter.feature`
+- Generic click divisions across meters -> `tests/bdd/timing-and-meter/timing-and-meter.feature`
 - Count-in and section cues -> `tests/bdd/cues-and-markers/cues-and-markers.feature`
 
 ## Media / Formats
